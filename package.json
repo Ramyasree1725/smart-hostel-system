@@ -1,0 +1,38 @@
+{
+  "name": "smart-hostel-management-system",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Enterprise Smart Hostel Management System with Automated Room Allocation, Complaint Urgency Tracking, Gate Security and Fee Ledger",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "cd frontend && npm run dev",
+    "dev": "node backend/server.js",
+    "build": "cd frontend && npm run build",
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint . --ext .js,.jsx"
+  },
+  "keywords": [
+    "hostel-management",
+    "mern",
+    "smart-allocation",
+    "gate-security",
+    "fee-management",
+    "attendance-system"
+  ],
+  "author": "Hostel Engineering Team",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.4.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
