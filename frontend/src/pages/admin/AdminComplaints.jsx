@@ -15,6 +15,7 @@ export default function AdminComplaints() {
   const [loading, setLoading] = useState(true);
   const [priorityFilter, setPriorityFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedComplaint, setSelectedComplaint] = useState(null);
   const [technician, setTechnician] = useState('');
   const [notes, setNotes] = useState('');
@@ -54,6 +55,24 @@ export default function AdminComplaints() {
   const filtered = complaints.filter((c) => {
     if (priorityFilter && c.priority !== priorityFilter) return false;
     if (statusFilter && c.status !== statusFilter) return false;
+
+    if (searchTerm.trim()) {
+      const search = searchTerm.toLowerCase();
+      const title = (c.title || '').toLowerCase();
+      const description = (c.description || '').toLowerCase();
+      const room = String(c.roomNumber || c.student?.roomNumber || '').toLowerCase();
+      const student = (c.student?.name || '').toLowerCase();
+
+      if (
+        !title.includes(search) &&
+        !description.includes(search) &&
+        !room.includes(search) &&
+        !student.includes(search)
+      ) {
+        return false;
+      }
+    }
+
     return true;
   });
 
@@ -69,6 +88,7 @@ export default function AdminComplaints() {
 
       {/* Filters Bar */}
       <div className="bg-white p-4 rounded-3xl border border-slate-200/80 shadow-card flex flex-wrap gap-3">
+        <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search complaint, student or room..." className="flex-1 min-w-[220px] px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500" />
         <select
           value={priorityFilter}
           onChange={(e) => setPriorityFilter(e.target.value)}
@@ -224,3 +244,6 @@ export default function AdminComplaints() {
     </div>
   );
 }
+
+
+
