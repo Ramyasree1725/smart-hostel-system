@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Hostel Management System | Student • Warden • Security</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    body { background-color: #f8fafc; color: #0f172a; line-height: 1.5; }
+    
+    /* Layout */
+    .header { position: sticky; top: 0; z-index: 40; background: #ffffff; border-bottom: 1px solid #e2e8f0; height: 64px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .container { max-width: 1200px; margin: 0 auto; width: 100%; display: flex; gap: 24px; padding: 24px; }
+    .sidebar { width: 240px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 16px; height: fit-content; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    .main-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 24px; }
+
+    /* Nav Buttons */
+    .role-switcher { display: flex; background: #f1f5f9; padding: 4px; border-radius: 14px; gap: 4px; }
+    .role-btn { border: none; background: transparent; padding: 8px 16px; border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; color: #475569; display: flex; align-items: center; gap: 8px; transition: all 0.2s; }
+    .role-btn.active { background: #4f46e5; color: #ffffff; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.3); }
+    .role-btn.active-sec { background: #0f172a; color: #fbbf24; }
+
+    .nav-btn { width: 100%; text-align: left; border: none; background: transparent; padding: 12px 16px; border-radius: 12px; font-size: 13px; font-weight: 600; color: #475569; cursor: pointer; display: flex; align-items: center; gap: 10px; margin-bottom: 4px; transition: all 0.2s; }
+    .nav-btn:hover { background: #f1f5f9; color: #0f172a; }
+    .nav-btn.active { background: #4f46e5; color: #ffffff; box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25); }
+
+    /* Cards & Grids */
+    .card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    .banner { background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #0f172a 100%); color: #ffffff; border-radius: 24px; padding: 32px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 25px -5px rgba(30, 27, 75, 0.4); }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+
+    /* Badges & Buttons */
+    .badge { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 9999px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+    .badge-success { background: #dcfce7; color: #166534; }
+    .badge-danger { background: #ffe4e6; color: #9f1239; }
+    .badge-warning { background: #fef3c7; color: #92400e; }
+    .badge-info { background: #e0e7ff; color: #3730a3; }
+    
+    .btn { border: none; padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; }
+    .btn-primary { background: #4f46e5; color: #ffffff; box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3); }
+    .btn-primary:hover { background: #4338ca; }
+    .btn-success { background: #16a34a; color: #ffffff; }
+    .btn-success:hover { background: #15803d; }
+    .btn-warning { background: #d97706; color: #ffffff; }
+    .btn-danger { background: #e11d48; color: #ffffff; }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+    th { background: #f8fafc; color: #64748b; font-weight: 700; text-transform: uppercase; font-size: 11px; padding: 14px 20px; border-bottom: 1px solid #e2e8f0; }
+    td { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; color: #334155; }
+    tr:hover td { background: #f8fafc; }
+
+    /* Modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 50; padding: 20px; }
+    .modal-overlay.active { display: flex; }
+    .modal { background: #ffffff; border-radius: 24px; max-width: 500px; width: 100%; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); border: 1px solid #e2e8f0; }
+    .modal-header { padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; }
+    .modal-body { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+
+    /* Forms */
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #475569; }
+    .form-control { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 13px; outline: none; background: #f8fafc; }
+    .form-control:focus { border-color: #4f46e5; background: #ffffff; }
+
+    /* Print */
+    @media print {
+      body * { visibility: hidden; }
+      .printable, .printable * { visibility: visible; }
+      .printable { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 20px; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="header no-print">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, #4f46e5, #10b981); display: flex; align-items: center; justify-content: center; color: white;">
+        <svg style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+      </div>
+      <div>
+        <h1 style="font-size: 17px; font-weight: 900; color: #0f172a; margin: 0; line-height: 1;">SmartHostel</h1>
+        <span style="font-size: 10px; font-weight: 700; color: #4f46e5; text-transform: uppercase;">Campus Management System</span>
+      </div>
+    </div>
+
+    <!-- 3-WAY ROLE SWITCHER -->
+    <div class="role-switcher">
+      <button class="role-btn active" id="btn-role-student" onclick="setRole('student')">
+        <svg style="width: 15px; height: 15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"/></svg>
+        Student Portal
+      </button>
+      <button class="role-btn" id="btn-role-warden" onclick="setRole('warden')">
+        <svg style="width: 15px; height: 15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        Warden Console
+      </button>
+      <button class="role-btn" id="btn-role-security" onclick="setRole('security')">
+        <svg style="width: 15px; height: 15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016zM12 9v4m0 4h.01"/></svg>
+        Security Gate Guard
+      </button>
+    </div>
+
+    <!-- Active User -->
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="text-align: right;">
+        <p style="font-size: 13px; font-weight: 700; color: #0f172a;" id="header-user-name">Rahul Varma</p>
+        <p style="font-size: 11px; color: #64748b;" id="header-user-sub">21CS108 • Room A-101</p>
+      </div>
+      <div style="width: 36px; height: 36px; border-radius: 12px; background: #e0e7ff; color: #4338ca; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px;" id="header-avatar">
+        R
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <div class="container">
+    <!-- SIDEBAR -->
+    <aside class="sidebar no-print">
+      <p style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #94a3b8; padding: 4px 12px; margin-bottom: 8px;" id="sidebar-role-title">Student Portal</p>
+      <div id="sidebar-links">
+        <!-- Injected dynamically via JS -->
+      </div>
+    </aside>
+
+    <!-- CONTENT -->
+    <main class="main-content" id="main-content">
+      <!-- Injected dynamically via JS -->
+    </main>
+  </div>
+
+  <!-- MODAL: PAY FEE -->
+  <div class="modal-overlay" id="modal-pay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 style="font-size: 15px; font-weight: 800; color: #0f172a;" id="pay-modal-title">Pay Fee Online</h3>
+        <button onclick="closeModal('modal-pay')" style="border: none; background: transparent; font-size: 16px; cursor: pointer; font-weight: 700;">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Payable Amount (₹)</label>
+          <input type="number" class="form-control" id="pay-amount" readonly style="font-weight: 800; font-size: 16px;">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Select Payment Method</label>
+          <select class="form-control" id="pay-method">
+            <option>UPI Online (GooglePay / PhonePe / Paytm)</option>
+            <option>Debit Card / ATM</option>
+            <option>Net Banking</option>
+          </select>
+        </div>
+        <button class="btn btn-success" style="width: 100%; justify-content: center; padding: 14px;" onclick="confirmPayment()">
+          Confirm Payment & Download Receipt
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: LODGE COMPLAINT -->
+  <div class="modal-overlay" id="modal-complaint">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 style="font-size: 15px; font-weight: 800; color: #0f172a;">Lodge Maintenance Complaint</h3>
+        <button onclick="closeModal('modal-complaint')" style="border: none; background: transparent; font-size: 16px; cursor: pointer; font-weight: 700;">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select class="form-control" id="c-cat">
+            <option>Electrical</option>
+            <option>Plumbing</option>
+            <option>Wi-Fi / Internet</option>
+            <option>Food & Mess</option>
+            <option>Carpentry & Furniture</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Complaint Title</label>
+          <input type="text" class="form-control" id="c-title" placeholder="e.g. Washroom tap dripping continuously">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea rows="3" class="form-control" id="c-desc" placeholder="Details of the issue..."></textarea>
+        </div>
+        <button class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px;" onclick="saveComplaint()">
+          Submit Ticket
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: REQUEST GATE PASS -->
+  <div class="modal-overlay" id="modal-leave">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 style="font-size: 15px; font-weight: 800; color: #0f172a;">Request Home Visit / Outing Pass</h3>
+        <button onclick="closeModal('modal-leave')" style="border: none; background: transparent; font-size: 16px; cursor: pointer; font-weight: 700;">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Pass Type</label>
+          <select class="form-control" id="lv-type">
+            <option>Home Visit</option>
+            <option>Day Outing / Library Pass</option>
+            <option>Medical Emergency</option>
+          </select>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">From Date</label>
+            <input type="date" class="form-control" id="lv-from">
+          </div>
+          <div class="form-group">
+            <label class="form-label">To Date</label>
+            <input type="date" class="form-control" id="lv-to">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Destination Address</label>
+          <input type="text" class="form-control" id="lv-dest" value="Plot 45, Jubilee Hills, Hyderabad">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Purpose / Request Message to Warden</label>
+          <textarea rows="2" class="form-control" id="lv-reason" placeholder="State reason for outing..."></textarea>
+        </div>
+        <button class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px;" onclick="saveLeaveRequest()">
+          Send Request to Warden Madam
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: PRINTABLE RECEIPT / GATE PASS -->
+  <div class="modal-overlay" id="modal-print">
+    <div class="modal" style="max-width: 480px;">
+      <div class="modal-header no-print">
+        <span style="font-size: 12px; font-weight: 800; color: #16a34a;" id="print-modal-heading">Document Ready</span>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-primary" onclick="window.print()" style="padding: 6px 14px; font-size: 12px;">Print</button>
+          <button onclick="closeModal('modal-print')" style="border: none; background: transparent; font-size: 16px; cursor: pointer; font-weight: 700;">✕</button>
+        </div>
+      </div>
+      <div class="modal-body printable" id="print-body">
+        <!-- Injected dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Pure Vanilla JS state management (100% offline & instantaneous)
+    let currentRole = 'student';
+    let currentTab = 'fees'; // 'fees', 'complaints', 'passes', 'warden_passes', 'warden_attendance', 'warden_complaints', 'warden_mess', 'security_scanner', 'security_log'
+    let attendanceFilter = 'all';
+    let attendanceSearch = '';
+
+    let state = {
+      user: { name: 'Rahul Varma', rollNo: '21CS108', room: 'A-101', dept: 'Computer Science', year: '3rd Year' },
+      attendanceDate: '2026-09-04',
+      studentsAttendance: [
+        { id: 1, name: 'Rahul Varma', rollNo: '21CS108', dept: 'CSE (3rd Yr)', room: 'A-101', parentName: 'K. Varma (Father)', parentPhone: '+91 9123456780', status: 'Present' },
+        { id: 2, name: 'Sneha Reddy', rollNo: '22IT204', dept: 'IT (2nd Yr)', room: 'B-101', parentName: 'S. N. Reddy (Father)', parentPhone: '+91 9876543210', status: 'On Leave' },
+        { id: 3, name: 'Vikram Singh', rollNo: '21ME045', dept: 'Mech (3rd Yr)', room: 'A-102', parentName: 'R. K. Singh (Father)', parentPhone: '+91 9848022338', status: 'Present' },
+        { id: 4, name: 'Ananya Sharma', rollNo: '23EC012', dept: 'ECE (1st Yr)', room: 'C-201', parentName: 'Sunitha Sharma (Mother)', parentPhone: '+91 9988776655', status: 'Present' },
+        { id: 5, name: 'Karthik Raja', rollNo: '22CS089', dept: 'CSE (2nd Yr)', room: 'A-103', parentName: 'V. Raja (Father)', parentPhone: '+91 9440112233', status: 'Absent' },
+        { id: 6, name: 'Divya Sri', rollNo: '21CS115', dept: 'CSE (3rd Yr)', room: 'C-202', parentName: 'M. Padmavathi (Mother)', parentPhone: '+91 9390234567', status: 'Present' },
+        { id: 7, name: 'Sai Teja', rollNo: '22EE034', dept: 'EEE (2nd Yr)', room: 'B-102', parentName: 'G. Venkateswarlu (Father)', parentPhone: '+91 9866123456', status: 'Present' },
+        { id: 8, name: 'Pooja Hegde', rollNo: '23CS050', dept: 'CSE (1st Yr)', room: 'C-203', parentName: 'L. Hegde (Father)', parentPhone: '+91 9849911224', status: 'On Leave' }
+      ],
+      fees: {
+        roomFee: 38000,
+        roomPaid: true,
+        messFee: 20000,
+        messPaid: false,
+        payments: [
+          { receiptNo: 'HST-881290', type: 'Room Accommodation Fee', amount: 38000, date: '2026-08-28', method: 'UPI Online' }
+        ]
+      },
+      complaints: [
+        { id: 1, title: 'Short circuit spark in switch board near Bed A', category: 'Electrical', priority: 'Emergency', status: 'In Progress', room: 'A-101', student: 'Rahul Varma', date: '2026-09-04', notes: 'Electrician dispatched with spare MCB switchboard.' },
+        { id: 2, title: 'Washroom tap leaking continuously & slow drainage', category: 'Plumbing', priority: 'Medium', status: 'Pending', room: 'A-101', student: 'Rahul Varma', date: '2026-09-03', notes: '' },
+        { id: 3, title: 'Wi-Fi disconnects frequently between 8 PM to 11 PM', category: 'Wi-Fi / Internet', priority: 'High', status: 'Resolved', room: 'A-101', student: 'Vikram Singh', date: '2026-08-30', notes: 'Replaced floor router antenna and reset gateway bandwidth.' },
+        { id: 4, title: 'Mess water cooler filter cleaning needed in Block A', category: 'Food & Mess', priority: 'Medium', status: 'In Progress', room: 'Mess Block A', student: 'Divya Sri', date: '2026-09-02', notes: 'RO service scheduled today.' },
+        { id: 5, title: 'Study table drawer handle broken', category: 'Carpentry & Furniture', priority: 'Low', status: 'Pending', room: 'A-101', student: 'Rahul Varma', date: '2026-09-01', notes: '' }
+      ],
+      leaves: [
+        { id: 101, student: 'Rahul Varma', rollNo: '21CS108', room: 'A-101', type: 'Home Visit', from: '2026-09-08', to: '2026-09-12', dest: 'Plot 45, Jubilee Hills, Hyderabad', phone: '+91 9123456780 (Father - K. Varma)', reason: 'Attending family wedding ceremony at hometown.', status: 'Approved', remark: 'Parent confirmed over phone. Approved.', passCode: 'PASS-892104' },
+        { id: 102, student: 'Sneha Reddy', rollNo: '22IT204', room: 'B-101', type: 'Day Outing', from: '2026-09-04', to: '2026-09-04', dest: 'City Central Library, Vizag', phone: '+91 9876543210 (Father - S. N. Reddy)', reason: 'Reference book study for semester exams.', status: 'Approved', remark: 'Return before 8:00 PM.', passCode: 'PASS-554210' }
+      ],
+      gateLogs: [
+        { id: 1, student: 'Sneha Reddy', rollNo: '22IT204', room: 'B-101', passCode: 'PASS-554210', outTime: '10:30 AM', inTime: null, status: 'Currently Outside', dest: 'City Central Library, Vizag' }
+      ],
+      mess: [
+        { meal: 'Breakfast', menu: 'Idli, Sambar, Medu Vada, Coconut Chutney, Coffee/Tea', quality: '4.8', taste: '4.6', hygiene: 'Excellent', notes: 'Hot food served on time. Kitchen counters sanitized.' },
+        { meal: 'Lunch', menu: 'Steamed Rice, Dal Tadka, Paneer Butter Masala, Curd, Salad', quality: '4.6', taste: '4.4', hygiene: 'Good', notes: 'Fresh vegetables used. Oil level tested. Good taste.' },
+        { meal: 'Dinner', menu: 'Phulka / Chapati, Mixed Veg Korma, Jeera Rice, Gulab Jamun', quality: '4.7', taste: '4.5', hygiene: 'Excellent', notes: 'Clean dining hall. Water purifier filters checked.' }
+      ]
+    };
+
+    function setRole(r) {
+      currentRole = r;
+      document.getElementById('btn-role-student').className = 'role-btn ' + (r === 'student' ? 'active' : '');
+      document.getElementById('btn-role-warden').className = 'role-btn ' + (r === 'warden' ? 'active' : '');
+      document.getElementById('btn-role-security').className = 'role-btn ' + (r === 'security' ? 'active-sec' : '');
+
+      if (r === 'student') {
+        currentTab = 'fees';
+        document.getElementById('header-user-name').innerText = state.user.name;
+        document.getElementById('header-user-sub').innerText = state.user.rollNo + ' • Room ' + state.user.room;
+        document.getElementById('header-avatar').innerText = 'R';
+        document.getElementById('sidebar-role-title').innerText = 'Student Portal';
+      } else if (r === 'warden') {
+        currentTab = 'warden_passes';
+        document.getElementById('header-user-name').innerText = 'Warden Radhika Rao';
+        document.getElementById('header-user-sub').innerText = 'Hostel Authority';
+        document.getElementById('header-avatar').innerText = 'W';
+        document.getElementById('sidebar-role-title').innerText = 'Warden Console';
+      } else {
+        currentTab = 'security_scanner';
+        document.getElementById('header-user-name').innerText = 'Officer Shankar';
+        document.getElementById('header-user-sub').innerText = 'Main Gate 1 Guard';
+        document.getElementById('header-avatar').innerText = 'S';
+        document.getElementById('sidebar-role-title').innerText = 'Security Gate Guard';
+      }
+      renderSidebar();
+      renderContent();
+    }
+
+    function setTab(t) {
+      currentTab = t;
+      renderSidebar();
+      renderContent();
+    }
+
+    function renderSidebar() {
+      const container = document.getElementById('sidebar-links');
+      if (currentRole === 'student') {
+        container.innerHTML = `
+          <button class="nav-btn ${currentTab === 'fees' ? 'active' : ''}" onclick="setTab('fees')">
+            <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+            Hostel & Food Fees
+          </button>
+          <button class="nav-btn ${currentTab === 'complaints' ? 'active' : ''}" onclick="setTab('complaints')">
+            <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/></svg>
+            Complaints (${state.complaints.length})
+          </button>
+          <button class="nav-btn ${currentTab === 'passes' ? 'active' : ''}" onclick="setTab('passes')">
+            <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            Outing / Gate Pass
+          </button>
+        `;
+      } else if (currentRole === 'warden') {
+        const pendingPasses = state.leaves.filter(l => l.status === 'Pending').length;
+        const pendingComplaints = state.complaints.filter(c => c.status !== 'Resolved').length;
+        container.innerHTML = `
+          <button class="nav-btn ${currentTab === 'warden_passes' ? 'active' : ''}" onclick="setTab('warden_passes')">
+            <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            Gate Pass Approvals (${pendingPasses})
+          </button>
+          <button class="nav-btn ${currentTab === 'warden_attendance' ? 'active' : ''}" onclick="setTab('warden_attendance')">
+            <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+            Student Attendance
+          </button>
+          <button class="nav-btn ${currentTab === 'warden_mess' ? 'active' : ''}" onclick="setTab('warden_mess')">
+            <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+            Food & Mess Quality
+          </button>
+          <button class="nav-btn ${currentTab === 'warden_complaints' ? 'active' : ''}" onclick="setTab('warden_complaints')">
+            <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/></svg>
+            Solve Complaints (${pendingComplaints})
+          </button>
+        `;
+      } else {
+        container.innerHTML = `
+          <button class="nav-btn ${currentTab === 'security_scanner' ? 'active' : ''}" onclick="setTab('security_scanner')">
+            <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+            Gate Pass Verifier
+          </button>
+          <button class="nav-btn ${currentTab === 'security_log' ? 'active' : ''}" onclick="setTab('security_log')">
+            <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            Movement Log
+          </button>
+        `;
+      }
+    }
+
+    function renderContent() {
+      const main = document.getElementById('main-content');
+
+      // 1. STUDENT FEES (ROOM FEE vs FOOD FEE WITH PAID / UNPAID)
+      if (currentRole === 'student' && currentTab === 'fees') {
+        const totalDue = (state.fees.roomPaid ? 0 : state.fees.roomFee) + (state.fees.messPaid ? 0 : state.fees.messFee);
+        main.innerHTML = `
+          <div>
+            <h2 style="font-size: 22px; font-weight: 900; color: #0f172a;">Hostel Fees & Payment Status</h2>
+            <p style="font-size: 13px; color: #64748b;">Separated Room Accommodation Fee and Food / Mess Fee with live Paid / Unpaid tracking.</p>
+          </div>
+
+          <div class="banner">
+            <div>
+              <span class="badge ${totalDue === 0 ? 'badge-success' : 'badge-danger'}">
+                ${totalDue === 0 ? 'ALL SEMESTER FEES PAID' : 'UNPAID BALANCE DUE'}
+              </span>
+              <h3 style="font-size: 36px; font-weight: 900; margin-top: 8px;">₹${totalDue.toLocaleString()}</h3>
+              <p style="font-size: 12px; opacity: 0.8;">Total Semester Dues: ₹${(state.fees.roomFee + state.fees.messFee).toLocaleString()} • Due Date: 2026-09-30</p>
+            </div>
+            ${totalDue > 0 ? `
+              <button class="btn btn-success" style="padding: 12px 24px; font-size: 14px;" onclick="openPayModal('full', ${totalDue})">
+                Pay Remaining Total Dues
+              </button>
+            ` : `
+              <div class="badge badge-success" style="padding: 8px 16px; font-size: 13px;">All Dues Cleared in Full</div>
+            `}
+          </div>
+
+          <div class="grid-2">
+            <!-- 1. ROOM ACCOMMODATION FEE -->
+            <div class="card" style="display: flex; flex-direction: column; gap: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                  <span style="font-size: 11px; font-weight: 700; color: #4f46e5; text-transform: uppercase;">Accommodation</span>
+                  <h3 style="font-size: 17px; font-weight: 800; color: #0f172a; margin-top: 2px;">Room Accommodation Fee</h3>
+                  <p style="font-size: 12px; color: #64748b;">Includes Room Rent, Electricity & High-Speed Wi-Fi</p>
+                </div>
+                <span class="badge ${state.fees.roomPaid ? 'badge-success' : 'badge-danger'}">
+                  ${state.fees.roomPaid ? 'PAID' : 'UNPAID'}
+                </span>
+              </div>
+
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <p style="font-size: 11px; color: #64748b;">Semester Charge</p>
+                  <p style="font-size: 20px; font-weight: 900; color: #0f172a;">₹${state.fees.roomFee.toLocaleString()}</p>
+                </div>
+                ${!state.fees.roomPaid ? `
+                  <button class="btn btn-primary" onclick="openPayModal('room', ${state.fees.roomFee})">
+                    Pay Room Fee
+                  </button>
+                ` : `
+                  <span style="font-size: 12px; font-weight: 700; color: #16a34a;">Receipt Generated</span>
+                `}
+              </div>
+            </div>
+
+            <!-- 2. FOOD & MESS FEE -->
+            <div class="card" style="display: flex; flex-direction: column; gap: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                  <span style="font-size: 11px; font-weight: 700; color: #d97706; text-transform: uppercase;">Catering & Meals</span>
+                  <h3 style="font-size: 17px; font-weight: 800; color: #0f172a; margin-top: 2px;">Food & Mess Fee</h3>
+                  <p style="font-size: 12px; color: #64748b;">Breakfast, Lunch, Evening Snacks & Dinner</p>
+                </div>
+                <span class="badge ${state.fees.messPaid ? 'badge-success' : 'badge-danger'}">
+                  ${state.fees.messPaid ? 'PAID' : 'UNPAID'}
+                </span>
+              </div>
+
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <p style="font-size: 11px; color: #64748b;">Semester Charge</p>
+                  <p style="font-size: 20px; font-weight: 900; color: #0f172a;">₹${state.fees.messFee.toLocaleString()}</p>
+                </div>
+                ${!state.fees.messPaid ? `
+                  <button class="btn btn-warning" onclick="openPayModal('mess', ${state.fees.messFee})">
+                    Pay Food Fee
+                  </button>
+                ` : `
+                  <span style="font-size: 12px; font-weight: 700; color: #16a34a;">Receipt Generated</span>
+                `}
+              </div>
+            </div>
+          </div>
+
+          <!-- TRANSACTIONS -->
+          <div class="card" style="padding: 0; overflow: hidden;">
+            <div style="padding: 16px 20px; border-bottom: 1px solid #e2e8f0;">
+              <h3 style="font-size: 15px; font-weight: 800; color: #0f172a;">Payment Transactions & Printable Receipts</h3>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Receipt #</th>
+                  <th>Fee Particulars</th>
+                  <th>Amount Paid</th>
+                  <th>Mode</th>
+                  <th>Date</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${state.fees.payments.map((p, idx) => `
+                  <tr>
+                    <td style="font-family: monospace; font-weight: 800; color: #4f46e5;">${p.receiptNo}</td>
+                    <td style="font-weight: 700;">${p.type}</td>
+                    <td style="font-weight: 900; color: #0f172a;">₹${p.amount.toLocaleString()}</td>
+                    <td>${p.method}</td>
+                    <td style="color: #64748b;">${p.date}</td>
+                    <td style="text-align: right;">
+                      <button class="btn btn-primary" style="padding: 6px 12px; font-size: 11px;" onclick="showReceiptModal(${idx})">
+                        Print Receipt
+                      </button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      // 2. STUDENT COMPLAINTS
+      else if (currentRole === 'student' && currentTab === 'complaints') {
+        main.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h2 style="font-size: 22px; font-weight: 900; color: #0f172a;">Hostel Complaints & Maintenance</h2>
+              <p style="font-size: 13px; color: #64748b;">Sample maintenance tickets across electrical, plumbing, Wi-Fi, and food.</p>
+            </div>
+            <button class="btn btn-primary" onclick="openModal('modal-complaint')">+ Lodge New Complaint</button>
+          </div>
+
+          <div class="grid-2">
+            ${state.complaints.map(c => `
+              <div class="card" style="display: flex; flex-direction: column; gap: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span class="badge ${c.priority === 'Emergency' ? 'badge-danger' : c.priority === 'High' ? 'badge-warning' : 'badge-info'}">
+                    ${c.priority} Priority
+                  </span>
+                  <span class="badge ${c.status === 'Resolved' ? 'badge-success' : 'badge-warning'}">
+                    ${c.status}
+                  </span>
+                </div>
+                <div>
+                  <span style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">${c.category}</span>
+                  <h3 style="font-size: 15px; font-weight: 800; color: #0f172a; margin-top: 2px;">${c.title}</h3>
+                </div>
+                <p style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; font-size: 12px; color: #475569;">
+                  ${c.description}
+                </p>
+                <div style="display: flex; justify-content: space-between; font-size: 11px; color: #64748b; border-top: 1px solid #f1f5f9; padding-top: 8px;">
+                  <span>Room: <strong>${c.room}</strong></span>
+                  <span>Date: ${c.date}</span>
+                </div>
+                ${c.notes ? `<div style="background: #dcfce7; color: #166534; padding: 8px 12px; border-radius: 10px; font-size: 11px; font-weight: 600;"><strong>Action:</strong> ${c.notes}</div>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+
+      // 3. STUDENT PASSES
+      else if (currentRole === 'student' && currentTab === 'passes') {
+        main.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h2 style="font-size: 22px; font-weight: 900; color: #0f172a;">Outing & Gate Passes</h2>
+              <p style="font-size: 13px; color: #64748b;">Send request message to Warden madam and receive digital QR pass upon approval.</p>
+            </div>
+            <button class="btn btn-primary" onclick="openModal('modal-leave')">+ Request Outing Pass</button>
+          </div>
+
+          <div class="grid-2">
+            ${state.leaves.map(lv => `
+              <div class="card" style="display: flex; flex-direction: column; gap: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                  <div>
+                    <span style="font-size: 11px; font-weight: 700; color: #4f46e5;">${lv.type}</span>
+                    <h3 style="font-size: 16px; font-weight: 900; color: #0f172a;">${lv.passCode}</h3>
+                  </div>
+                  <span class="badge ${lv.status === 'Approved' ? 'badge-success' : lv.status === 'Rejected' ? 'badge-danger' : 'badge-warning'}">
+                    ${lv.status}
+                  </span>
+                </div>
+                <div style="background: #f8fafc; padding: 12px; border-radius: 12px; font-size: 12px; color: #334155; display: flex; flex-direction: column; gap: 4px;">
+                  <p><strong>Duration:</strong> ${lv.from} to ${lv.to}</p>
+                  <p><strong>Destination:</strong> ${lv.dest}</p>
+                  <p><strong>Reason:</strong> ${lv.reason}</p>
+                  ${lv.remark ? `<p style="color: #166534; font-weight: 700;">Warden: ${lv.remark}</p>` : ''}
+                </div>
+                ${lv.status === 'Approved' ? `
+                  <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="showGatePassModal('${lv.passCode}')">
+                    Show Gate Pass QR
+                  </button>
+                ` : ''}
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+
+      // 4. WARDEN ATTENDANCE
+      else if (currentRole === 'warden' && currentTab === 'warden_attendance') {
+        const total = state.studentsAttendance.length;
+        const presentCount = state.studentsAttendance.filter(s => s.status === 'Present').length;
+        const absentCount = state.studentsAttendance.filter(s => s.status === 'Absent').length;
+        const leaveCount = state.studentsAttendance.filter(s => s.status === 'On Leave').length;
+        const percent = Math.round((presentCount / (total || 1)) * 100);
+
+        main.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <div>
+              <h2 style="font-size: 22px; font-weight: 900; color: #0f172a;">Student Evening Attendance (Roll Call)</h2>
+              <p style="font-size: 13px; color: #64748b;">Record nightly resident presence and track absent / on-leave students.</p>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <input type="date" class="form-control" style="width: auto; font-weight: 700;" value="${state.attendanceDate}" onchange="state.attendanceDate = this.value">
+              <button class="btn btn-success" style="padding: 10px 16px;" onclick="markAllPresent()">✓ Mark All Present</button>
+            </div>
+          </div>
+
+          <!-- SUMMARY STATS -->
+          <div class="grid-3">
+            <div class="card" style="padding: 16px;">
+              <span style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Total Hostel Residents</span>
+              <p style="font-size: 26px; font-weight: 900; color: #0f172a; margin-top: 4px;">${total} Students</p>
+            </div>
+            <div class="card" style="padding: 16px; border-left: 4px solid #16a34a;">
+              <span style="font-size: 11px; font-weight: 700; color: #16a34a; text-transform: uppercase;">Present Tonight</span>
+              <p style="font-size: 26px; font-weight: 900; color: #16a34a; margin-top: 4px;">${presentCount} <span style="font-size: 14px; font-weight: 700; color: #64748b;">(${percent}%)</span></p>
+            </div>
+            <div class="card" style="padding: 16px; border-left: 4px solid #e11d48;">
+              <span style="font-size: 11px; font-weight: 700; color: #e11d48; text-transform: uppercase;">Absent / On Leave</span>
+              <p style="font-size: 26px; font-weight: 900; color: #e11d48; margin-top: 4px;">${absentCount + leaveCount} Students</p>
+            </div>
+          </div>
+
+          <!-- ATTENDANCE TABLE -->
+          <div class="card" style="padding: 0; overflow: hidden;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Student Name</th>
+                  <th>Roll No & Dept</th>
+                  <th>Room</th>
+                  <th>Roll Call Attendance Action</th>
+                  <th style="text-align: right;">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${state.studentsAttendance.map(stu => `
+                  <tr>
+                    <td style="font-weight: 800; color: #0f172a; font-size: 14px;">
+                      ${stu.name}
+                    </td>
+                    <td style="color: #64748b; font-family: monospace;">
+                      ${stu.rollNo} • ${stu.dept}
+                    </td>
+                    <td>
+                      <span class="badge badge-info" style="font-size: 11px;">${stu.room}</span>
+                    </td>
+                    <td>
+                      <div style="display: flex; gap: 6px;">
+                        <button class="btn" style="padding: 6px 12px; font-size: 11px; ${stu.status === 'Present' ? 'background: #16a34a; color: #fff;' : 'background: #f1f5f9; color: #64748b;'}" onclick="setStudentAttendance(${stu.id}, 'Present')">
+                          ✓ Present
+                        </button>
+                        <button class="btn" style="padding: 6px 12px; font-size: 11px; ${stu.status === 'Absent' ? 'background: #e11d48; color: #fff;' : 'background: #f1f5f9; color: #64748b;'}" onclick="setStudentAttendance(${stu.id}, 'Absent')">
+                          ✗ Absent
+                        </button>
+                        <button class="btn" style="padding: 6px 12px; font-size: 11px; ${stu.status === 'On Leave' ? 'background: #d97706; color: #fff;' : 'background: #f1f5f9; color: #64748b;'}" onclick="setStudentAttendance(${stu.id}, 'On Leave')">
+                          ✈ On Leave
+                        </button>
+                      </div>
+                    </td>
+                    <td style="text-align: right;">
+                      <span class="badge ${stu.status === 'Present' ? 'badge-success' : stu.status === 'Absent' ? 'badge-danger' : 'badge-warning'}">
+                        ${stu.status}
+                      </span>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      // 5. WARDEN PASS APPROVALS
+      else if (currentRole === 'warden' && currentTab === 'warden_passes') {
+        main.innerHTML = `
+          <div>
+            <h2 style="font-size: 22px; font-weight: 900; color: #0f172a;">Student Outing Pass Requests</h2>
+            <p style="font-size: 13px; color: #64748b;">Review student messages, verify parent phone numbers, and approve/reject with remarks.</p>
+          </div>
+
+          <div class="grid-2">
+            ${state.leaves.map(lv => `
+              <div class="card" style="display: flex; flex-direction: column; gap: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                  <div>
+                    <span style="font-size: 11px; font-weight: 700; color: #4f46e5;">${lv.type} (${lv.passCode})</span>
+                    <h3 style="font-size: 16px; font-weight: 900; color: #0f172a;">${lv.student}</h3>
+                    <p style="font-size: 12px; color: #64748b;">${lv.rollNo} • Room ${lv.room}</p>
+                  </div>
+                  <span class="badge ${lv.status === 'Approved' ? 'badge-success' : lv.status === 'Rejected' ? 'badge-danger' : 'badge-warning'}">
+                    ${lv.status}
+                  </span>
+                </div>
+                <div style="background: #f8fafc; padding: 12px; border-radius: 12px; font-size: 12px; color: #334155; display: flex; flex-direction: column; gap: 4px;">
+                  <p><strong>Duration:</strong> ${lv.from} to ${lv.to}</p>
+                  <p><strong>Destination:</strong> ${lv.dest}</p>
+                  <p><strong>Parent Contact:</strong> <strong style="color: #4f46e5;">${lv.phone}</strong></p>
+                  <p><strong>Student Message:</strong> ${lv.reason}</p>
+                </div>
+                ${lv.status === 'Pending' ? `
+                  <div style="display: flex; gap: 8px;">
+                    <button class="btn btn-success" style="flex: 1; justify-content: center;" onclick="wardenDecision(${lv.id}, 'Approved')">Approve Pass</button>
+                    <button class="btn btn-danger" style="flex: 1; justify-content: center;" onclick="wardenDecision(${lv.id}, 'Rejected')">Reject</button>
+                  </div>
+                ` : `
+                  <div style="background: #dcfce7; color: #166534; padding: 8px 12px; border-radius: 10px; font-size: 11px; font-weight: 700;">
+                    Decision: ${lv.remark}
+                  </div>
+                `}
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+
+      // 6. WARDEN COMPLAINTS RESOLVER
+      else if (currentRole === 'warden' && currentTab === 'warden_complaints') {
+        const pending = state.complaints.filter(c => c.status !== 'Resolved').length;
+        main.innerHTML = `
+          <div>
+            <h2 style="font-size: 22px; font-weight: 900; color: #0f172a;">Student Complaints & Maintenance Resolution</h2>
+            <p style="font-size: 13px; color: #64748b;">Review resident tickets, assign technicians, and resolve issues.</p>
+          </div>
+
+          <div class="grid-2">
+            ${state.complaints.map(c => `
+              <div class="card" style="display: flex; flex-direction: column; gap: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span class="badge ${c.priority === 'Emergency' ? 'badge-danger' : c.priority === 'High' ? 'badge-warning' : 'badge-info'}">
+                    ${c.priority} Priority
+                  </span>
+                  <span class="badge ${c.status === 'Resolved' ? 'badge-success' : 'badge-warning'}">
+                    ${c.status}
+                  </span>
+                </div>
+                <div>
+                  <span style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">${c.category} • Room ${c.room}</span>
+                  <h3 style="font-size: 15px; font-weight: 800; color: #0f172a; margin-top: 2px;">${c.title}</h3>
+                </div>
+                <p style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; font-size: 12px; color: #475569;">
+                  ${c.description}
+                </p>
+                <div style="display: flex; justify-content: space-between; font-size: 11px; color: #64748b;">
+                  <span>Student: <strong>${c.student || 'Rahul Varma'}</strong></span>
+                  <span>Date: ${c.date}</span>
+                </div>
+                ${c.notes ? `<div style="background: #dcfce7; color: #166534; padding: 8px 12px; border-radius: 10px; font-size: 11px; font-weight: 600;"><strong>Warden Note:</strong> ${c.notes}</div>` : ''}
+                
+                ${c.status !== 'Resolved' ? `
+                  <div style="display: flex; gap: 8px; margin-top: 4px;">
+                    <button class="btn btn-primary" style="flex: 1; justify-content: center; font-size: 11px; padding: 8px;" onclick="resolveComplaint(${c.id}, 'In Progress')">Assign Technician</button>
+                    <button class="btn btn-success" style="flex: 1; justify-content: center; font-size: 11px; padding: 8px;" onclick="resolveComplaint(${c.id}, 'Resolved')">Mark Resolved</button>
+                  </div>
+                ` : `
+                  <div style="text-align: right; color: #16a34a; font-weight: 700; font-size: 12px;">✓ Issue Resolved Successfully</div>
+                `}
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+
+      // 7. WARDEN MESS QUALITY
+      else if (currentRole === 'warden' && currentTab === 'warden_mess') {
+        main.innerHTML = `
+          <div>
+            <h2 style="font-size: 22px; font-weight: 900; color: #0f172a;">Food & Mess Quality Monitoring</h2>
+            <p style="font-size: 13px; color: #64748b;">Warden inspection records for daily breakfast, lunch, and dinner.</p>
+          </div>
+
+          <div class="grid-3">
+            ${state.mess.map(m => `
+              <div class="card" style="display: flex; flex-direction: column; gap: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 12px; font-weight: 800; color: #d97706; text-transform: uppercase;">${m.meal}</span>
+                  <span class="badge badge-success">${m.hygiene}</span>
+                </div>
+                <p style="background: #f8fafc; padding: 10px; border-radius: 10px; font-size: 12px; color: #334155;"><strong>Menu:</strong> ${m.menu}</p>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 700;">
+                  <span>Quality: ${m.quality} / 5</span>
+                  <span>Taste: ${m.taste} / 5</span>
+                </div>
+                <p style="font-size: 11px; color: #475569;"><strong>Warden Notes:</strong> ${m.notes}</p>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+
+      // 6. SECURITY SCANNER
+      else if (currentRole === 'security' && currentTab === 'security_scanner') {
+        const outsideCount = state.gateLogs.filter(g => g.status === 'Currently Outside').length;
+        main.innerHTML = `
+          <div class="banner">
+            <div>
+              <span style="font-size: 11px; font-weight: 700; color: #fbbf24; text-transform: uppercase;">Main Gate 1 Security</span>
+              <h3 style="font-size: 24px; font-weight: 900; margin-top: 4px;">Gate Pass Checkpoint</h3>
+              <p style="font-size: 12px; opacity: 0.8;">Validate approved pass code, log departure out-time, and arrival in-time.</p>
+            </div>
+            <div style="text-align: right; background: rgba(255,255,255,0.1); padding: 12px 20px; border-radius: 16px;">
+              <p style="font-size: 11px; text-transform: uppercase; font-weight: 700;">Currently Outside</p>
+              <p style="font-size: 24px; font-weight: 900; color: #fbbf24;">${outsideCount} Students</p>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="card" style="display: flex; flex-direction: column; gap: 14px;">
+              <h3 style="font-size: 16px; font-weight: 800; color: #0f172a;">Validate Pass Code / Roll No</h3>
+              <div class="form-group">
+                <input type="text" class="form-control" id="sec-code-input" placeholder="e.g. PASS-892104 or 21CS108" style="text-transform: uppercase; font-weight: 700;">
+              </div>
+              <button class="btn btn-primary" style="justify-content: center;" onclick="verifySecurityCode()">Verify with Database</button>
+
+              <div id="sec-verify-box" style="display: none; padding: 14px; border-radius: 12px; font-size: 12px;"></div>
+            </div>
+
+            <div class="card" style="display: flex; flex-direction: column; gap: 12px;">
+              <h3 style="font-size: 16px; font-weight: 800; color: #0f172a;">Students Currently Outside (${outsideCount})</h3>
+              ${outsideCount === 0 ? '<p style="font-size: 12px; color: #94a3b8; text-align: center; padding: 20px;">All students are inside the hostel premises.</p>' : `
+                ${state.gateLogs.filter(g => g.status === 'Currently Outside').map(g => `
+                  <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                      <p style="font-weight: 800; font-size: 13px; color: #0f172a;">${g.student} (${g.rollNo})</p>
+                      <p style="font-size: 11px; color: #64748b;">Out-Time: <strong style="color: #d97706;">${g.outTime}</strong> • Pass: <strong>${g.passCode}</strong></p>
+                    </div>
+                    <button class="btn btn-success" style="padding: 6px 12px; font-size: 11px;" onclick="securityCheckIn('${g.passCode}')">Mark Return</button>
+                  </div>
+                `).join('')}
+              `}
+            </div>
+          </div>
+        `;
+      }
+
+      // 7. SECURITY MOVEMENT LOG
+      else if (currentRole === 'security' && currentTab === 'security_log') {
+        main.innerHTML = `
+          <div>
+            <h2 style="font-size: 22px; font-weight: 900; color: #0f172a;">Gate Movement Attendance Log</h2>
+            <p style="font-size: 13px; color: #64748b;">Complete historical movement sheet with student name, departure time, and arrival time.</p>
+          </div>
+
+          <div class="card" style="padding: 0; overflow: hidden;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Pass Code</th>
+                  <th>Out-Time (Departure)</th>
+                  <th>In-Time (Arrival)</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${state.gateLogs.map(g => `
+                  <tr>
+                    <td style="font-weight: 800; color: #0f172a;">${g.student} (${g.rollNo})</td>
+                    <td style="font-family: monospace; font-weight: 800; color: #4f46e5;">${g.passCode}</td>
+                    <td style="color: #d97706; font-weight: 700;">${g.outTime}</td>
+                    <td style="color: #16a34a; font-weight: 700;">${g.inTime || 'Outside'}</td>
+                    <td>
+                      <span class="badge ${g.status === 'Returned / Inside' ? 'badge-success' : 'badge-warning'}">
+                        ${g.status}
+                      </span>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+    }
+
+    // Modal Helpers
+    let payingType = 'full';
+    function openPayModal(type, amount) {
+      payingType = type;
+      document.getElementById('pay-amount').value = amount;
+      document.getElementById('pay-modal-title').innerText = type === 'room' ? 'Pay Room Accommodation Fee' : type === 'mess' ? 'Pay Food & Mess Fee' : 'Pay Total Semester Dues';
+      document.getElementById('modal-pay').className = 'modal-overlay active';
+    }
+
+    function confirmPayment() {
+      const amt = Number(document.getElementById('pay-amount').value);
+      const method = document.getElementById('pay-method').value;
+      const receiptNo = 'HST-' + Math.floor(100000 + Math.random() * 900000);
+      const dateStr = new Date().toISOString().split('T')[0];
+
+      if (payingType === 'room') {
+        state.fees.roomPaid = true;
+      } else if (payingType === 'mess') {
+        state.fees.messPaid = true;
+      } else {
+        state.fees.roomPaid = true;
+        state.fees.messPaid = true;
+      }
+
+      state.fees.payments.unshift({
+        receiptNo,
+        type: payingType === 'room' ? 'Room Accommodation Fee' : payingType === 'mess' ? 'Food & Mess Fee' : 'Total Semester Dues',
+        amount: amt,
+        method,
+        date: dateStr
+      });
+
+      closeModal('modal-pay');
+      renderContent();
+      showReceiptModal(0);
+    }
+
+    function showReceiptModal(idx) {
+      const p = state.fees.payments[idx];
+      document.getElementById('print-modal-heading').innerText = 'Official Payment Receipt';
+      document.getElementById('print-body').innerHTML = `
+        <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 12px;">
+          <h2 style="font-size: 18px; font-weight: 900; color: #0f172a;">CAMPUS HOSTEL AUTHORITY</h2>
+          <p style="font-size: 12px; color: #64748b;">Official Digital Fee Payment Receipt</p>
+        </div>
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; font-size: 12px; display: flex; flex-direction: column; gap: 4px;">
+          <p><strong>Receipt No:</strong> <span style="font-family: monospace; font-weight: 800; color: #4f46e5;">${p.receiptNo}</span></p>
+          <p><strong>Particulars:</strong> ${p.type}</p>
+          <p><strong>Student Name:</strong> ${state.user.name} (${state.user.rollNo})</p>
+          <p><strong>Room Number:</strong> ${state.user.room}</p>
+          <p><strong>Payment Mode:</strong> ${p.method}</p>
+          <p><strong>Date:</strong> ${p.date}</p>
+        </div>
+        <div style="background: #e0e7ff; border: 1px solid #c7d2fe; padding: 16px; border-radius: 14px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <p style="font-size: 11px; font-weight: 700; color: #3730a3; text-transform: uppercase;">Amount Paid</p>
+            <p style="font-size: 11px; color: #4338ca;">${p.type}</p>
+          </div>
+          <p style="font-size: 24px; font-weight: 900; color: #3730a3;">₹${p.amount.toLocaleString()}</p>
+        </div>
+        <p style="font-size: 10px; color: #94a3b8; text-align: center;">Computer generated digital receipt. Requires no physical signature.</p>
+      `;
+      document.getElementById('modal-print').className = 'modal-overlay active';
+    }
+
+    function showGatePassModal(passCode) {
+      const lv = state.leaves.find(l => l.passCode === passCode);
+      if (!lv) return;
+      document.getElementById('print-modal-heading').innerText = 'Approved Gate Pass';
+      document.getElementById('print-body').innerHTML = `
+        <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 12px;">
+          <span class="badge badge-success">APPROVED BY WARDEN</span>
+          <h2 style="font-size: 18px; font-weight: 900; color: #0f172a; margin-top: 6px;">HOSTEL EXIT GATE PASS</h2>
+          <p style="font-size: 14px; font-family: monospace; font-weight: 800; color: #4f46e5;">${lv.passCode}</p>
+        </div>
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; font-size: 12px; display: flex; flex-direction: column; gap: 4px;">
+          <p><strong>Student:</strong> ${lv.student} (${lv.rollNo})</p>
+          <p><strong>Room:</strong> ${lv.room}</p>
+          <p><strong>Destination:</strong> ${lv.dest}</p>
+          <p><strong>Valid Duration:</strong> ${lv.from} to ${lv.to}</p>
+          <p><strong>Parent Contact:</strong> ${lv.phone}</p>
+          <p style="color: #166534; font-weight: 700;"><strong>Warden Remark:</strong> ${lv.remark}</p>
+        </div>
+        <p style="font-size: 10px; color: #94a3b8; text-align: center;">Show this pass code to the Security Guard at Main Gate 1.</p>
+      `;
+      document.getElementById('modal-print').className = 'modal-overlay active';
+    }
+
+    function saveComplaint() {
+      const cat = document.getElementById('c-cat').value;
+      const title = document.getElementById('c-title').value;
+      const desc = document.getElementById('c-desc').value;
+      if (!title) return alert('Please enter complaint title');
+
+      const text = `${title} ${desc}`.toLowerCase();
+      let priority = 'Medium';
+      if (/spark|fire|smoke|shock|short circuit|flood/.test(text)) priority = 'Emergency';
+      else if (/no water|power cut|broken|ac not working/.test(text)) priority = 'High';
+
+      state.complaints.unshift({
+        id: Date.now(),
+        title,
+        category: cat,
+        priority,
+        status: 'Pending',
+        room: state.user.room,
+        date: new Date().toISOString().split('T')[0],
+        description: desc,
+        notes: ''
+      });
+
+      closeModal('modal-complaint');
+      renderContent();
+    }
+
+    function saveLeaveRequest() {
+      const type = document.getElementById('lv-type').value;
+      const from = document.getElementById('lv-from').value;
+      const to = document.getElementById('lv-to').value;
+      const dest = document.getElementById('lv-dest').value;
+      const reason = document.getElementById('lv-reason').value;
+      if (!from || !to) return alert('Please select dates');
+
+      state.leaves.unshift({
+        id: Date.now(),
+        student: state.user.name,
+        rollNo: state.user.rollNo,
+        room: state.user.room,
+        type,
+        from,
+        to,
+        dest,
+        phone: '+91 9123456780 (Father)',
+        reason: reason || 'Home visit',
+        status: 'Pending',
+        remark: '',
+        passCode: 'PASS-' + Math.floor(100000 + Math.random() * 900000)
+      });
+
+      closeModal('modal-leave');
+      renderContent();
+      alert('Request message sent to Warden madam for approval!');
+    }
+
+    function wardenDecision(id, decision) {
+      const remark = prompt('Enter Warden remark:', decision === 'Approved' ? 'Parent confirmed over call. Approved.' : 'Rejected by Warden.');
+      state.leaves = state.leaves.map(l => l.id === id ? { ...l, status: decision, remark: remark || decision } : l);
+      renderContent();
+      alert(`Leave request marked as ${decision}!`);
+    }
+
+    function verifySecurityCode() {
+      const input = document.getElementById('sec-code-input').value.trim().toUpperCase();
+      const found = state.leaves.find(l => l.passCode === input || l.rollNo.toUpperCase() === input);
+      const box = document.getElementById('sec-verify-box');
+      box.style.display = 'block';
+
+      if (!found || found.status !== 'Approved') {
+        box.style.background = '#ffe4e6';
+        box.style.color = '#9f1239';
+        box.style.border = '1px solid #fecdd3';
+        box.innerHTML = '<strong>Invalid or Unapproved Pass!</strong> No active approved pass found.';
+        return;
+      }
+
+      const isOutside = state.gateLogs.some(g => g.passCode === found.passCode && g.status === 'Currently Outside');
+      box.style.background = '#dcfce7';
+      box.style.color = '#166534';
+      box.style.border = '1px solid #bbf7d0';
+      box.innerHTML = `
+        <p style="font-weight: 800; font-size: 13px;">Valid Approved Pass Verified!</p>
+        <p style="margin-top: 4px;">Student: <strong>${found.student}</strong> (${found.rollNo})</p>
+        <p>Room: ${found.room} • Destination: ${found.dest}</p>
+        ${!isOutside ? `
+          <button class="btn btn-warning" style="width: 100%; justify-content: center; margin-top: 8px;" onclick="securityCheckOut('${found.passCode}', '${found.student}', '${found.rollNo}', '${found.room}', '${found.dest}')">
+            Record Exit (Out-Time Departure)
+          </button>
+        ` : `
+          <button class="btn btn-success" style="width: 100%; justify-content: center; margin-top: 8px;" onclick="securityCheckIn('${found.passCode}')">
+            Record Arrival (In-Time Return)
+          </button>
+        `}
+      `;
+    }
+
+    function securityCheckOut(passCode, student, rollNo, room, dest) {
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      state.gateLogs.unshift({
+        id: Date.now(),
+        student,
+        rollNo,
+        room,
+        passCode,
+        outTime: timeStr,
+        inTime: null,
+        status: 'Currently Outside',
+        dest
+      });
+      document.getElementById('sec-verify-box').style.display = 'none';
+      document.getElementById('sec-code-input').value = '';
+      renderContent();
+      alert(`Check-Out recorded for ${student} at ${timeStr}`);
+    }
+
+    function securityCheckIn(passCode) {
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      state.gateLogs = state.gateLogs.map(g => g.passCode === passCode && g.status === 'Currently Outside' ? { ...g, inTime: timeStr, status: 'Returned / Inside' } : g);
+      const box = document.getElementById('sec-verify-box');
+      if (box) box.style.display = 'none';
+      renderContent();
+      alert(`Check-In recorded at ${timeStr}. Student returned safely.`);
+    }
+
+    function setStudentAttendance(id, newStatus) {
+      state.studentsAttendance = state.studentsAttendance.map(s => s.id === id ? { ...s, status: newStatus } : s);
+      renderContent();
+    }
+
+    function markAllPresent() {
+      state.studentsAttendance = state.studentsAttendance.map(s => ({ ...s, status: 'Present' }));
+      renderContent();
+      alert('All hostel residents marked Present for tonight roll call!');
+    }
+
+    function callParent(parentName, parentPhone, studentName) {
+      const msg = prompt(`📞 Dialing Student Parent:\n\nStudent: ${studentName}\nParent: ${parentName}\nPhone: ${parentPhone}\n\nEnter note or message to log for this call:`, `Confirmed resident attendance status with ${parentName}.`);
+      if (msg !== null) {
+        alert(`✓ Call simulated to ${parentName} (${parentPhone}).\nWarden Log saved: "${msg}"`);
+      }
+    }
+
+    function resolveComplaint(id, status) {
+      const notes = prompt(`Enter Warden resolution note for complaint:`, status === 'Resolved' ? 'Technician completed repairs and verified operation.' : 'Assigned to senior hostel electrician / plumber.');
+      if (notes !== null) {
+        state.complaints = state.complaints.map(c => c.id === id ? { ...c, status, notes: notes || status } : c);
+        renderContent();
+        alert(`Complaint status updated to "${status}"!`);
+      }
+    }
+
+    function openModal(id) {
+      document.getElementById(id).className = 'modal-overlay active';
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).className = 'modal-overlay';
+    }
+
+    // Initialize instantly on load
+    setRole('student');
+  </script>
+</body>
+</html>
