@@ -1,0 +1,2347 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Indian Army Tactical Command HUD & Smart Soldier Band</title>
+  <!-- Tailwind CSS CDN (Free, Zero API Key) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Leaflet CSS & JS (Free OpenStreetMap, Zero API Key) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Chart.js CDN (Free, Zero API Key) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Default Clean Professional White Theme */
+    body { background-color: #F8FAFC; color: #0F172A; font-family: 'Inter', sans-serif; }
+    
+    /* 🌑 PURE JET-BLACK / CHARCOAL MATTE DARK THEME (NO BLUE TINTS) */
+    .dark body { background-color: #000000 !important; color: #F8FAFC; }
+    .dark header { background-color: #080808 !important; border-color: #1A1A1A !important; }
+    .dark aside { background-color: #050505 !important; border-color: #1A1A1A !important; }
+    .dark main { background-color: #000000 !important; }
+    .dark .bg-slate-900,
+    .dark .bg-slate-900\/80,
+    .dark .bg-slate-900\/60,
+    .dark .bg-slate-900\/40,
+    .dark .bg-slate-950,
+    .dark .bg-slate-950\/80,
+    .dark .bg-slate-950\/60 { background-color: #0A0A0A !important; border-color: #222222 !important; }
+    .dark .border-slate-800,
+    .dark .border-slate-700 { border-color: #222222 !important; }
+    .dark .leaflet-container { background: #050505 !important; }
+    .dark .bg-cyan-950,
+    .dark .bg-cyan-950\/40,
+    .dark .bg-cyan-950\/20 { background-color: #0D161A !important; }
+    .dark .bg-emerald-950,
+    .dark .bg-emerald-950\/40,
+    .dark .bg-emerald-950\/20 { background-color: #0A160F !important; }
+    .dark .bg-rose-950,
+    .dark .bg-rose-950\/40,
+    .dark .bg-rose-950\/20 { background-color: #1A0A0E !important; }
+    
+    .bg-tactical-grid {
+      background-size: 30px 30px;
+      background-image: 
+        linear-gradient(to right, rgba(15, 23, 42, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(15, 23, 42, 0.05) 1px, transparent 1px);
+    }
+    .dark .bg-tactical-grid {
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    }
+
+    /* Light Mode Card and Container Overrides */
+    html:not(.dark) aside { background-color: #FFFFFF !important; border-color: #E2E8F0 !important; }
+    html:not(.dark) main { background-color: #F8FAFC !important; }
+    html:not(.dark) .tab-content .bg-slate-900\/60,
+    html:not(.dark) .tab-content .bg-slate-900\/80,
+    html:not(.dark) .tab-content .bg-slate-900\/40,
+    html:not(.dark) .tab-content .bg-slate-950,
+    html:not(.dark) .tab-content .bg-slate-950\/80,
+    html:not(.dark) .tab-content .bg-slate-950\/60 { background-color: #FFFFFF !important; border-color: #E2E8F0 !important; color: #0F172A !important; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    html:not(.dark) .border-slate-800 { border-color: #E2E8F0 !important; }
+    html:not(.dark) .bg-slate-950 { background-color: #F1F5F9 !important; }
+    html:not(.dark) .text-white { color: #0F172A !important; }
+    html:not(.dark) .text-slate-300 { color: #334155 !important; }
+    html:not(.dark) .text-slate-400 { color: #64748B !important; }
+    html:not(.dark) select,
+    html:not(.dark) input { background-color: #F8FAFC !important; border-color: #CBD5E1 !important; color: #0F172A !important; }
+    html:not(.dark) table thead { background-color: #F1F5F9 !important; border-color: #E2E8F0 !important; color: #475569 !important; }
+    html:not(.dark) table tbody tr { border-color: #E2E8F0 !important; }
+    html:not(.dark) table tbody tr:hover { background-color: #F8FAFC !important; }
+
+    .leaflet-container { width: 100%; height: 100%; background: #F1F5F9 !important; border-radius: 0.75rem; }
+
+    .glow-cyan { box-shadow: 0 0 15px rgba(6, 182, 212, 0.35); }
+    .glow-red { box-shadow: 0 0 25px rgba(239, 68, 68, 0.6); }
+    .glow-green { box-shadow: 0 0 20px rgba(16, 185, 129, 0.5); }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-[#070B12] dark:text-slate-100 antialiased selection:bg-cyan-500 selection:text-white h-screen flex flex-col overflow-hidden transition-colors duration-200">
+
+  <!-- TOP HUD NAVBAR -->
+  <header class="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-[#090E1A]/95 px-6 flex items-center justify-between flex-shrink-0 z-30 backdrop-blur-md shadow-sm">
+    <div class="flex items-center space-x-3">
+      <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-cyan-700 flex items-center justify-center shadow-md font-bold text-white text-xl">
+        🇮🇳
+      </div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <span class="font-mono text-sm font-extrabold tracking-wider text-slate-900 dark:text-white uppercase">INDIAN ARMY COMMAND HUD</span>
+          <span class="rounded bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 text-[10px] font-bold text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800">SECTOR ALPHA</span>
+        </div>
+        <p class="text-[10px] text-slate-500 dark:text-slate-400 font-mono">Two-Way Military Telemetry & Command Dispatch System</p>
+      </div>
+    </div>
+
+    <div class="flex items-center space-x-3">
+      <!-- ☀️/🌙 THEME SWITCHER BUTTON -->
+      <button onclick="toggleThemeMode()" id="themeToggleBtn" class="flex items-center space-x-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 px-3 py-1.5 text-xs font-mono font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 transition shadow-sm">
+        <span id="themeBtnIcon">🌙</span>
+        <span id="themeBtnText">Dark HUD</span>
+      </button>
+
+      <!-- Live Status Pill -->
+      <div class="flex items-center space-x-2 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 px-3 py-1 text-xs">
+        <span class="relative flex h-2.5 w-2.5">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+        </span>
+        <span class="font-mono text-[11px] text-slate-700 dark:text-slate-300">2-WAY COMM ACTIVE</span>
+      </div>
+
+      <!-- Soldier's Wearable Watch Band Launcher -->
+      <button onclick="toggleModal('smartBandModal', true)" class="flex items-center space-x-2 rounded-xl border border-rose-400 dark:border-rose-500/60 bg-rose-50 dark:bg-rose-950/60 px-3.5 py-1.5 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/70 transition shadow">
+        <span class="text-sm">⌚</span>
+        <span>Soldier Smart Watch Band</span>
+      </button>
+
+      <!-- Officer Profile & Auth Switcher -->
+      <div class="border-l border-slate-200 dark:border-slate-800 pl-3.5 flex items-center space-x-3">
+        <div class="text-right hidden sm:block">
+          <p id="navUserDisplayName" class="text-xs font-bold text-slate-800 dark:text-slate-200">Capt. Vikram Rathore</p>
+          <p id="navUserRoleBadge" class="font-mono text-[10px] text-cyan-600 dark:text-cyan-400">Commanding Officer • OFF-007</p>
+        </div>
+        <button onclick="openAuthModal()" class="rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-1.5 text-xs font-mono text-cyan-700 dark:text-cyan-300 transition flex items-center space-x-1.5 shadow-sm">
+          <span>🔐</span>
+          <span id="navAuthBtnText">Switch / Login</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN WRAPPER -->
+  <div class="flex flex-1 overflow-hidden">
+    <!-- SIDEBAR -->
+    <aside class="w-64 border-r border-slate-800 bg-[#090E1A] flex flex-col justify-between p-3.5 hidden md:flex no-print">
+      <div class="space-y-4">
+        <!-- Base Unit Card -->
+        <div class="rounded-xl border border-slate-800 bg-slate-950 p-3">
+          <div class="flex items-center justify-between text-[10px] text-slate-400 font-mono">
+            <span>OPERATIONAL BASE</span>
+            <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+          </div>
+          <p class="mt-1 font-mono text-xs font-bold text-white">10 PARA SPECIAL FORCES</p>
+          <p class="text-[10px] text-cyan-400 font-mono mt-1">Grid: 17.4400°N, 78.3489°E</p>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="space-y-1 text-xs">
+          <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center justify-between rounded-xl px-3 py-2.5 font-semibold text-cyan-300 bg-cyan-950/40 border border-cyan-500/30">
+            <span class="flex items-center space-x-2">
+              <svg class="w-4 h-4 text-cyan-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+              <span>Command Dashboard</span>
+            </span>
+          </button>
+          <button onclick="switchTab('attendance')" id="nav-attendance" class="nav-btn w-full flex items-center justify-between rounded-xl px-3 py-2.5 font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white">
+            <span class="flex items-center space-x-2">
+              <svg class="w-4 h-4 text-emerald-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+              <span>Soldier Attendance</span>
+            </span>
+            <span class="rounded bg-emerald-500/20 px-1.5 py-0.2 text-[9px] text-emerald-400 font-bold">DAILY</span>
+          </button>
+          <button onclick="switchTab('monitoring')" id="nav-monitoring" class="nav-btn w-full flex items-center justify-between rounded-xl px-3 py-2.5 font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white">
+            <span class="flex items-center space-x-2">
+              <svg class="w-4 h-4 text-rose-400 inline animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+              <span>Live Biometrics</span>
+            </span>
+            <span class="rounded bg-rose-500/20 px-1.5 py-0.2 text-[9px] text-rose-400 font-bold">ECG</span>
+          </button>
+          <button onclick="switchTab('map')" id="nav-map" class="nav-btn w-full flex items-center justify-between rounded-xl px-3 py-2.5 font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white">
+            <span class="flex items-center space-x-2">
+              <svg class="w-4 h-4 text-cyan-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+              <span>Tactical GPS Map</span>
+            </span>
+          </button>
+          <button onclick="switchTab('missing')" id="nav-missing" class="nav-btn w-full flex items-center justify-between rounded-xl px-3 py-2.5 font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white">
+            <span class="flex items-center space-x-2">
+              <svg class="w-4 h-4 text-amber-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+              <span>Missing & Search (MIA)</span>
+            </span>
+            <span id="navMissingBadge" class="rounded-full bg-rose-600 px-1.5 py-0.2 text-[10px] font-bold text-white">1</span>
+          </button>
+          <button onclick="switchTab('logistics')" id="nav-logistics" class="nav-btn w-full flex items-center justify-between rounded-xl px-3 py-2.5 font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white">
+            <span class="flex items-center space-x-2">
+              <svg class="w-4 h-4 text-amber-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+              <span>Food, Water & Ammo</span>
+            </span>
+          </button>
+          <button onclick="switchTab('alerts')" id="nav-alerts" class="nav-btn w-full flex items-center justify-between rounded-xl px-3 py-2.5 font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white">
+            <span class="flex items-center space-x-2">
+              <svg class="w-4 h-4 text-rose-500 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+              <span>Active Distress Alerts</span>
+            </span>
+            <span id="navAlertBadge" class="rounded-full bg-rose-600 px-1.5 py-0.2 text-[10px] font-bold text-white">2</span>
+          </button>
+          <button onclick="switchTab('reports')" id="nav-reports" class="nav-btn w-full flex items-center justify-between rounded-xl px-3 py-2.5 font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white">
+            <span class="flex items-center space-x-2">
+              <svg class="w-4 h-4 text-slate-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+              <span>Official Reports</span>
+            </span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Quick Band Shortcut in Sidebar -->
+      <div class="border-t border-slate-800 pt-3 space-y-2">
+        <button onclick="toggleModal('smartBandModal', true)" class="w-full rounded-xl bg-gradient-to-r from-rose-600 to-red-600 py-2.5 text-xs font-bold text-white shadow-lg shadow-rose-950 hover:from-rose-500 hover:to-red-500 transition flex items-center justify-center space-x-1.5">
+          <span>⌚ Wearable Watch Band</span>
+        </button>
+        <p class="text-[9px] text-slate-500 text-center font-mono">Test Soldier SOS & Health Triggers</p>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-1 overflow-y-auto p-4 lg:p-6 bg-tactical-grid pb-20">
+
+      <!-- ================================================================= -->
+      <!-- TAB 1: COMMAND DASHBOARD -->
+      <!-- ================================================================= -->
+      <div id="tab-dashboard" class="tab-content space-y-6">
+        <!-- Top Metrics Row -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="rounded-2xl border border-cyan-500/20 bg-cyan-950/20 p-4">
+            <div class="flex justify-between text-xs font-bold text-slate-400 uppercase">
+              <span>Total Personnel</span>
+              <span>🪖</span>
+            </div>
+            <p class="mt-2 font-mono text-2xl font-bold text-white">5 <span class="text-xs text-slate-400">Soldiers</span></p>
+            <p class="text-[11px] text-emerald-400 font-mono mt-1">4 Present On Duty</p>
+          </div>
+
+          <div class="rounded-2xl border border-emerald-500/20 bg-emerald-950/20 p-4">
+            <div class="flex justify-between text-xs font-bold text-slate-400 uppercase">
+              <span>Smart IoT Bands</span>
+              <span>🛰️</span>
+            </div>
+            <p class="mt-2 font-mono text-2xl font-bold text-white">4 <span class="text-xs text-slate-400">Online</span></p>
+            <p class="text-[11px] text-rose-400 font-mono mt-1">1 Missing Radio Signal</p>
+          </div>
+
+          <div class="rounded-2xl border border-rose-500/20 bg-rose-950/20 p-4">
+            <div class="flex justify-between text-xs font-bold text-slate-400 uppercase">
+              <span>Active Distress Alerts</span>
+              <span>🚨</span>
+            </div>
+            <p id="dashAlertCount" class="mt-2 font-mono text-2xl font-bold text-rose-400">2 <span class="text-xs text-slate-400">Pending</span></p>
+            <p class="text-[11px] text-amber-400 font-mono mt-1">Click to Resolve</p>
+          </div>
+
+          <div class="rounded-2xl border border-amber-500/20 bg-amber-950/20 p-4">
+            <div class="flex justify-between text-xs font-bold text-slate-400 uppercase">
+              <span>Fleet Avg Pulse</span>
+              <span class="inline-flex items-center justify-center text-rose-400 animate-pulse">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+              </span>
+            </div>
+            <p id="fleetAvgHeartRate" class="mt-2 font-mono text-2xl font-bold text-white">82 <span class="text-xs text-slate-400">BPM Avg</span></p>
+            <p id="fleetVitalsSummary" class="text-[11px] text-amber-400 font-mono mt-1">4 Active • 1 High Vitals</p>
+          </div>
+        </div>
+
+        <!-- LIVE SOLDIER VITALS QUICK STRIP (ALL SOLDIERS AT A GLANCE) -->
+        <div class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-2.5 mb-3">
+            <div class="flex items-center space-x-2">
+              <span class="h-2 w-2 rounded-full bg-emerald-400 animate-ping"></span>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200 font-mono">
+                Real-Time Soldier Pulse & Vitals Radar (All 5 Soldiers)
+              </h3>
+            </div>
+            <span class="text-[10px] font-mono text-cyan-400 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800">
+              Live MAX30102 Stream • Updates Every 3s
+            </span>
+          </div>
+          <div id="allSoldiersPulseStrip" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3"></div>
+        </div>
+
+        <!-- Charts & Mini Map -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div class="lg:col-span-7 rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3 mb-3">
+              <div>
+                <h3 id="chartTitleText" class="text-xs font-bold uppercase tracking-wider text-slate-300 font-mono">
+                  Live Pulse Rate (BPM) — MAX30102
+                </h3>
+                <p class="text-[10px] font-mono text-slate-400">Continuous telemetry stream</p>
+              </div>
+              <div class="flex items-center space-x-2">
+                <span class="text-[11px] text-slate-400 font-mono">View Soldier:</span>
+                <select id="chartSoldierSelect" onchange="changeChartSoldier(this.value)" class="rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1 text-xs text-cyan-300 font-bold focus:border-cyan-500 focus:outline-none">
+                  <option value="ALL">📊 All Soldiers (Fleet Comparison)</option>
+                  <option value="SOL-001" selected>SOL-001 — Rajesh Kumar</option>
+                  <option value="SOL-002">SOL-002 — Arjun Singh</option>
+                  <option value="SOL-003">SOL-003 — Deepankar Das</option>
+                  <option value="SOL-004">SOL-004 — Manoj Verma</option>
+                  <option value="SOL-005">SOL-005 — Gurpreet Singh</option>
+                </select>
+              </div>
+            </div>
+            <div class="h-56 w-full">
+              <canvas id="liveChart"></canvas>
+            </div>
+          </div>
+
+          <div class="lg:col-span-5 rounded-2xl border border-slate-800 bg-slate-900/60 p-4 flex flex-col">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 font-mono">
+                Tactical GPS Tracker & Geofence
+              </h3>
+              <button onclick="switchTab('map')" class="text-xs text-cyan-400 hover:underline">Full Map →</button>
+            </div>
+            <div id="miniMap" class="flex-1 rounded-xl overflow-hidden border border-slate-800" style="min-height: 220px;"></div>
+          </div>
+        </div>
+
+        <!-- Soldier Deployments & Quick Action Cards -->
+        <div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
+          <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200 font-mono">
+                Active Soldier Deployments & Commander Response Controls
+              </h3>
+              <p class="text-[11px] text-slate-400">Click 🚑 Send Doctor, 🛡️ Assign Backup, or 📦 Drop Supplies</p>
+            </div>
+            <button onclick="toggleModal('smartBandModal', true)" class="rounded-lg bg-rose-950 px-2.5 py-1 text-xs font-bold text-rose-300 border border-rose-800">
+              ⌚ Open Watch Band
+            </button>
+          </div>
+          <div id="soldierCardContainer" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- TAB 2: SOLDIER ATTENDANCE (ROLL-CALL) -->
+      <!-- ================================================================= -->
+      <div id="tab-attendance" class="tab-content hidden space-y-5">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+          <div>
+            <h2 class="text-xl font-bold font-mono uppercase text-white">Daily Soldier Attendance & Roll Call</h2>
+            <p class="text-xs text-slate-400 font-mono">Real-time attendance status: On Patrol, Standby, Sick Bay, Leave, or Missing</p>
+          </div>
+          <span class="rounded-lg bg-emerald-950 px-3 py-1 text-xs font-mono font-bold text-emerald-400 border border-emerald-800">
+            Unit Strength: 5/5 Tracked
+          </span>
+        </div>
+
+        <!-- Attendance Stats Summary -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-mono">
+          <div class="rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-3.5">
+            <span class="text-emerald-400 font-bold">🟢 PRESENT ON PATROL</span>
+            <p id="attPresentCount" class="text-2xl font-bold text-white mt-1">3 Soldiers</p>
+          </div>
+          <div class="rounded-xl border border-cyan-500/30 bg-cyan-950/20 p-3.5">
+            <span class="text-cyan-400 font-bold">🔵 STANDBY AT BASE</span>
+            <p id="attStandbyCount" class="text-2xl font-bold text-white mt-1">1 Soldier</p>
+          </div>
+          <div class="rounded-xl border border-amber-500/30 bg-amber-950/20 p-3.5">
+            <span class="text-amber-400 font-bold">🟡 SICK BAY / HOSPITAL</span>
+            <p id="attSickCount" class="text-2xl font-bold text-white mt-1">0 Soldiers</p>
+          </div>
+          <div class="rounded-xl border border-rose-500/30 bg-rose-950/20 p-3.5">
+            <span class="text-rose-400 font-bold">🔴 MISSING IN ACTION (MIA)</span>
+            <p id="attMissingCount" class="text-2xl font-bold text-rose-400 mt-1">1 Soldier</p>
+          </div>
+        </div>
+
+        <!-- Attendance Table -->
+        <div class="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/50">
+          <table class="w-full text-left text-xs text-slate-300 font-mono">
+            <thead class="bg-slate-950 border-b border-slate-800 text-[10px] text-slate-400 uppercase">
+              <tr>
+                <th class="p-3.5">Soldier Photo / ID</th>
+                <th class="p-3.5">Full Name & Rank</th>
+                <th class="p-3.5">Tactical Unit</th>
+                <th class="p-3.5">📍 Working Post / Location</th>
+                <th class="p-3.5">Attendance Status</th>
+                <th class="p-3.5">Last Check-in Time</th>
+                <th class="p-3.5 text-right">Update Roll Call</th>
+              </tr>
+            </thead>
+            <tbody id="attendanceTableBody" class="divide-y divide-slate-800/60"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- TAB 3: LIVE BIOMETRICS -->
+      <!-- ================================================================= -->
+      <div id="tab-monitoring" class="tab-content hidden space-y-6">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+          <div>
+            <h2 class="text-xl font-bold font-mono uppercase text-white">Live Biometrics & Health Monitor</h2>
+            <p class="text-xs text-slate-400 font-mono">Continuous pulse rate, core temperature, blood oxygen, and battery</p>
+          </div>
+          <button onclick="toggleModal('smartBandModal', true)" class="rounded-xl bg-rose-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-rose-500 transition shadow-lg shadow-rose-900">
+            ⌚ Test Smart Band
+          </button>
+        </div>
+
+        <div id="monitoringGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- TAB 4: TACTICAL GPS REAL-TIME MAP -->
+      <!-- ================================================================= -->
+      <div id="tab-map" class="tab-content hidden space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+          <div>
+            <div class="flex items-center space-x-2">
+              <h2 class="text-xl font-bold font-mono uppercase text-white">Live Tactical Geospatial Map & GPS Radar</h2>
+              <span class="rounded bg-emerald-950 px-2 py-0.5 text-xs font-bold text-emerald-400 border border-emerald-800">REAL-TIME GPS FEED</span>
+            </div>
+            <p class="text-xs text-slate-400 font-mono">Live NEO-6M GPS Tracker • 5.0 km Base HQ Safe Geofence Perimeter</p>
+          </div>
+
+          <!-- MAP LAYER SWITCHER -->
+          <div class="flex items-center space-x-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-mono">
+            <button onclick="setMapLayer('satellite')" id="layerBtn-satellite" class="rounded-lg px-2.5 py-1 font-bold text-slate-400 hover:text-white transition">
+              🛰️ Satellite View
+            </button>
+            <button onclick="setMapLayer('osm')" id="layerBtn-osm" class="rounded-lg px-2.5 py-1 font-bold bg-cyan-950 text-cyan-300 border border-cyan-500 transition">
+              🗺️ India States & Roads
+            </button>
+            <button onclick="setMapLayer('terrain')" id="layerBtn-terrain" class="rounded-lg px-2.5 py-1 font-bold text-slate-400 hover:text-white transition">
+              ⛰️ Indian Topo Terrain
+            </button>
+            <button onclick="setMapLayer('dark')" id="layerBtn-dark" class="rounded-lg px-2.5 py-1 font-bold text-slate-400 hover:text-white transition">
+              🌙 Tactical Night
+            </button>
+          </div>
+        </div>
+
+        <!-- QUICK SOLDIER GPS FOCUS STRIP -->
+        <div class="flex flex-wrap items-center gap-2 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800 text-xs font-mono">
+          <span class="text-slate-400 font-bold mr-1">📍 Focus On:</span>
+          <button onclick="focusMapOnCoords(17.4400, 78.3489, 'Base HQ Command Post')" class="rounded-lg bg-slate-950 hover:bg-slate-800 px-2.5 py-1 text-cyan-300 border border-slate-700">
+            🏢 Base HQ
+          </button>
+          <button onclick="focusMapOnSoldier('SOL-001')" class="rounded-lg bg-slate-950 hover:bg-slate-800 px-2.5 py-1 text-emerald-300 border border-slate-700">
+            🪖 SOL-001 (Bunker 4)
+          </button>
+          <button onclick="focusMapOnSoldier('SOL-002')" class="rounded-lg bg-slate-950 hover:bg-slate-800 px-2.5 py-1 text-emerald-300 border border-slate-700">
+            🪖 SOL-002 (OP Bravo)
+          </button>
+          <button onclick="focusMapOnSoldier('SOL-003')" class="rounded-lg bg-slate-950 hover:bg-slate-800 px-2.5 py-1 text-amber-300 border border-slate-700">
+            ⚠️ SOL-003 (East Valley)
+          </button>
+          <button onclick="focusMapOnSoldier('SOL-004')" class="rounded-lg bg-slate-950 hover:bg-slate-800 px-2.5 py-1 text-cyan-300 border border-slate-700">
+            🪖 SOL-004 (Base Gate 2)
+          </button>
+          <button onclick="focusMapOnSoldier('SOL-005')" class="rounded-lg bg-slate-950 hover:bg-slate-800 px-2.5 py-1 text-rose-400 border border-slate-700">
+            🔴 SOL-005 (Ridge Sector)
+          </button>
+        </div>
+
+        <!-- FULL INTERACTIVE REAL-TIME MAP -->
+        <div class="relative w-full rounded-2xl border border-slate-800 overflow-hidden shadow-2xl" style="height: 520px;">
+          <div id="fullMap" class="w-full h-full"></div>
+
+          <!-- FLOATING GPS TELEMETRY HUD OVERLAY -->
+          <div class="absolute bottom-3 left-3 z-[1000] bg-slate-950/90 backdrop-blur-md p-3 rounded-xl border border-slate-700 font-mono text-[11px] space-y-1 shadow-2xl text-slate-300 max-w-xs sm:max-w-sm">
+            <div class="flex justify-between font-bold text-white border-b border-slate-800 pb-1">
+              <span class="text-cyan-400 flex items-center space-x-1">
+                <span class="h-2 w-2 rounded-full bg-emerald-400 animate-ping"></span>
+                <span>LIVE GPS SENSOR FEED</span>
+              </span>
+              <span id="mapSatsLocked" class="text-emerald-400">🛰️ 12 Satellites</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Center Grid:</span>
+              <span id="mapCenterCoords" class="text-white font-bold">17.4400°N, 78.3489°E</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Safe Geofence:</span>
+              <span class="text-emerald-400 font-semibold">5.0 km (Active Safe Zone)</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Tactical Units Tracked:</span>
+              <span id="mapUnitsTracked" class="text-cyan-400 font-bold">5 Personnel Online</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- TAB 5: MISSING SOLDIERS & SEARCH OPERATION (MIA) -->
+      <!-- ================================================================= -->
+      <div id="tab-missing" class="tab-content hidden space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+          <div>
+            <div class="flex items-center space-x-2">
+              <h2 class="text-xl font-bold font-mono uppercase text-rose-400">Missing Personnel & Search Operations (MIA)</h2>
+              <span class="rounded bg-rose-950 px-2 py-0.5 text-xs font-bold text-rose-300 border border-rose-800">TACTICAL SEARCH HUD</span>
+            </div>
+            <p class="text-xs text-slate-400 font-mono">Select a missing soldier, assign a Specialized Search & Extraction Team, and execute live search to find & secure them</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button onclick="simulateReportMissingPrompt()" class="rounded-xl border border-rose-500/50 bg-rose-950/40 px-3.5 py-1.5 text-xs font-bold text-rose-300 hover:bg-rose-900/50 transition flex items-center space-x-1.5">
+              <span>⚠️</span>
+              <span>Report Soldier Missing</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <!-- Left Column: Missing Soldiers List -->
+          <div class="lg:col-span-4 space-y-3">
+            <div class="flex justify-between items-center">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 font-mono">
+                Missing Personnel List
+              </h3>
+              <span id="miaCountBadge" class="text-[10px] font-mono text-rose-400 bg-rose-950 px-2 py-0.5 rounded border border-rose-800">1 MIA</span>
+            </div>
+            <div id="missingSoldierList" class="space-y-3"></div>
+
+            <!-- Operational Guidelines Card -->
+            <div class="rounded-2xl border border-slate-800 bg-slate-950/80 p-4 text-xs font-mono space-y-2">
+              <div class="flex items-center space-x-2 text-cyan-300 font-bold">
+                <span>🛡️</span>
+                <span>SEARCH PROTOCOL SOP</span>
+              </div>
+              <p class="text-[11px] text-slate-400 leading-relaxed">
+                Once a Specialized Team is assigned, they deploy directly to the last-known GPS coordinates, sweep the perimeter, locate the soldier, restore telemetry signals, and transport them to safety.
+              </p>
+            </div>
+          </div>
+
+          <!-- Right Column: GPS Radar & Specialized Team Assignment Panel -->
+          <div class="lg:col-span-8 rounded-2xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+              <div>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-cyan-400 font-mono" id="miaTargetTitle">
+                  GPS Pinpoint: Subedar Gurpreet Singh (SOL-005)
+                </h3>
+                <p class="text-[10px] text-slate-400 font-mono">Last Known GPS Sector: Sector Alpha Ridge Grid</p>
+              </div>
+              <span id="miaSignalBadge" class="text-[10px] font-mono text-rose-400 bg-rose-950 px-2 py-0.5 rounded border border-rose-800 animate-pulse">
+                RADIO SIGNAL OFFLINE
+              </span>
+            </div>
+
+            <!-- Mini MIA Radar Map -->
+            <div id="miaMap" class="w-full rounded-xl border border-slate-800" style="height: 250px;"></div>
+
+            <!-- Location Coordinates Telemetry -->
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-mono">
+              <div>
+                <span class="text-slate-400">📍 Last Reported GPS:</span>
+                <p class="text-white font-bold" id="miaCoords">17.4495°N, 78.3582°E</p>
+              </div>
+              <div>
+                <span class="text-slate-400">⛰️ Terrain / Sector:</span>
+                <p class="text-amber-400 font-semibold" id="miaTerrain">East Valley Ridge (Dense Area)</p>
+              </div>
+              <div>
+                <span class="text-slate-400">📏 Distance from HQ:</span>
+                <p class="text-cyan-400 font-semibold" id="miaDistance">~1.45 km North-East</p>
+              </div>
+            </div>
+
+            <!-- SPECIALIZED SEARCH TEAM SELECTOR -->
+            <div class="rounded-xl border border-cyan-500/30 bg-cyan-950/20 p-4 space-y-3 font-mono text-xs">
+              <div class="flex justify-between items-center">
+                <label class="font-bold text-slate-200 uppercase flex items-center space-x-1.5">
+                  <span>🎖️</span>
+                  <span>Assign Specialized Search & Rescue Team:</span>
+                </label>
+                <span class="text-[10px] text-cyan-400">5 Teams On Standby</span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <label class="flex items-start space-x-2.5 p-3 rounded-xl border border-slate-700 bg-slate-900/90 hover:border-cyan-500 cursor-pointer transition">
+                  <input type="radio" name="specializedTeam" value="PARA_SF_AIRBORNE" checked class="mt-1 accent-cyan-500">
+                  <div>
+                    <strong class="text-white text-xs block">🚁 10 PARA SF Airborne Squad</strong>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">Helicopter FAST-Rope • 4 Elite Commandos + Combat Medic</span>
+                  </div>
+                </label>
+
+                <label class="flex items-start space-x-2.5 p-3 rounded-xl border border-slate-700 bg-slate-900/90 hover:border-cyan-500 cursor-pointer transition">
+                  <input type="radio" name="specializedTeam" value="K9_TRACKER_UNIT" class="mt-1 accent-cyan-500">
+                  <div>
+                    <strong class="text-white text-xs block">🐕 K9 Army Tracker Scent Unit</strong>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">2 Sniffer Search Dogs + 4 Handlers for dense forest/caves</span>
+                  </div>
+                </label>
+
+                <label class="flex items-start space-x-2.5 p-3 rounded-xl border border-slate-700 bg-slate-900/90 hover:border-cyan-500 cursor-pointer transition">
+                  <input type="radio" name="specializedTeam" value="DRONE_FLIR_RECON" class="mt-1 accent-cyan-500">
+                  <div>
+                    <strong class="text-white text-xs block">🛩️ Tactical Thermal Aerial Recon Unit</strong>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">Night-Vision Infrared Aerial Recon • 800m thermal perimeter scan</span>
+                  </div>
+                </label>
+
+                <label class="flex items-start space-x-2.5 p-3 rounded-xl border border-slate-700 bg-slate-900/90 hover:border-cyan-500 cursor-pointer transition">
+                  <input type="radio" name="specializedTeam" value="MOUNTAIN_WARFARE" class="mt-1 accent-cyan-500">
+                  <div>
+                    <strong class="text-white text-xs block">🧗 High Altitude Mountain Rescue Unit</strong>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">Alpine Warfare Specialists with stretcher winch systems</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- LIVE SEARCH EXECUTION PROGRESS CONSOLE -->
+            <div id="rescueProgressConsole" class="hidden rounded-xl border border-amber-500/60 bg-amber-950/30 p-4 space-y-2 font-mono text-xs">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-amber-300 flex items-center space-x-2">
+                  <span class="h-2.5 w-2.5 rounded-full bg-amber-400 animate-ping"></span>
+                  <span id="rescueProgressStage">INITIALIZING SEARCH OPERATION...</span>
+                </span>
+                <span id="rescueProgressPercent" class="font-bold text-white">25%</span>
+              </div>
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div id="rescueProgressBar" class="h-full bg-gradient-to-r from-amber-500 to-emerald-500 transition-all duration-700" style="width: 25%"></div>
+              </div>
+              <p id="rescueProgressDetails" class="text-[11px] text-slate-300">Deploying tactical rescue units to target coordinates...</p>
+            </div>
+
+            <!-- EXECUTE SEARCH OPERATION BUTTON -->
+            <button id="launchRescueBtn" onclick="executeSpecializedRescue()" class="w-full rounded-xl bg-gradient-to-r from-rose-600 via-red-600 to-amber-600 py-3.5 text-xs font-extrabold uppercase text-white shadow-xl shadow-rose-950 hover:from-rose-500 hover:to-amber-500 active:scale-98 transition flex items-center justify-center space-x-2">
+              <span>🚁</span>
+              <span>Assign Specialized Team & Execute Search & Recovery Mission</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- TAB 6: LOGISTICS & SUPPLY DROPS -->
+      <!-- ================================================================= -->
+      <div id="tab-logistics" class="tab-content hidden space-y-6">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+          <div>
+            <h2 class="text-xl font-bold font-mono uppercase text-white">Tactical Logistics & Supply Drops</h2>
+            <p class="text-xs text-slate-400 font-mono">Monitor soldier water, food, and ammunition levels • Dispatch Drone Air Drops</p>
+          </div>
+          <button onclick="openDispatchModal('SOL-001', 'SUPPLIES')" class="rounded-xl bg-cyan-600 px-4 py-2 text-xs font-bold text-white hover:bg-cyan-500 transition shadow-lg shadow-cyan-600/30">
+            📦 Dispatch Drone Supply Drop
+          </button>
+        </div>
+
+        <div id="logisticsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- TAB 7: ALERTS CENTER (WITH IMMEDIATE CLEARANCE) -->
+      <!-- ================================================================= -->
+      <div id="tab-alerts" class="tab-content hidden space-y-4">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+          <div>
+            <h2 class="text-xl font-bold font-mono uppercase text-white">Active Distress & Anomaly Incidents</h2>
+            <p class="text-xs text-slate-400 font-mono">When you dispatch doctor, backup, or supplies, issues will immediately disappear from active alerts</p>
+          </div>
+        </div>
+
+        <div id="fullAlertsFeed" class="space-y-3"></div>
+
+        <div class="mt-8 pt-6 border-t border-slate-800 space-y-3">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-400 font-mono">
+            ✓ Successfully Resolved Incident History
+          </h3>
+          <div id="resolvedAlertsFeed" class="space-y-2"></div>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- TAB 8: MISSION REPORTS -->
+      <!-- ================================================================= -->
+      <div id="tab-reports" class="tab-content hidden space-y-6">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-3 no-print">
+          <div>
+            <h2 class="text-xl font-bold font-mono uppercase text-white">Mission Health & Logistics Dossier</h2>
+            <p class="text-xs text-slate-400 font-mono">Official printable deployment and casualty triage report</p>
+          </div>
+          <button onclick="window.print()" class="rounded-xl bg-cyan-600 px-4 py-2 text-xs font-bold text-white hover:bg-cyan-500 transition shadow-lg shadow-cyan-600/30">
+            🖨️ Print / Save as PDF
+          </button>
+        </div>
+
+        <div class="rounded-2xl border border-slate-800 bg-slate-900/80 p-8 space-y-6">
+          <div class="border-b-2 border-slate-700 pb-4 flex justify-between items-center">
+            <div>
+              <h1 class="text-xl font-mono font-extrabold uppercase text-white">SMART SOLDIER MONITORING SYSTEM</h1>
+              <p class="text-xs font-mono text-cyan-400">OFFICIAL CASUALTY, ATTENDANCE & SUPPLY REPORT • SECTOR ALPHA</p>
+            </div>
+            <div class="text-right text-xs font-mono text-slate-400">
+              <p>Generated: <span id="reportDate" class="text-white font-bold"></span></p>
+              <p>Officer: Capt. Vikram Rathore (OFF-007)</p>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <h3 class="text-xs font-bold uppercase font-mono text-slate-300">Field Deployment Summary</h3>
+            <table class="w-full text-left text-xs text-slate-300 border border-slate-800 font-mono">
+              <thead class="bg-slate-950 border-b border-slate-800 text-slate-400">
+                <tr>
+                  <th class="p-2.5">ID</th>
+                  <th class="p-2.5">Name</th>
+                  <th class="p-2.5">Unit</th>
+                  <th class="p-2.5">📍 Working Post / Location</th>
+                  <th class="p-2.5">Attendance</th>
+                  <th class="p-2.5">Pulse</th>
+                  <th class="p-2.5">Temp</th>
+                  <th class="p-2.5">Water</th>
+                  <th class="p-2.5">Ammo</th>
+                  <th class="p-2.5">Status</th>
+                </tr>
+              </thead>
+              <tbody id="reportTableBody" class="divide-y divide-slate-800 bg-slate-950/40"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- FLOATING ALERT BANNER -->
+  <div id="alertBanner" class="fixed bottom-5 right-5 z-50 hidden max-w-md rounded-2xl border p-4 shadow-2xl backdrop-blur-md transition-all">
+    <div class="flex items-start space-x-3">
+      <div class="text-3xl" id="bannerEmoji">🚨</div>
+      <div class="flex-1">
+        <div class="flex justify-between font-mono text-xs font-bold uppercase" id="bannerType">CRITICAL ALARM</div>
+        <p class="text-xs font-medium mt-1" id="bannerMessage">Abnormal telemetry detected</p>
+        <div class="mt-3 flex justify-between items-center text-xs">
+          <span class="font-bold text-white" id="bannerSoldier">Soldier: SOL-001</span>
+          <div class="flex space-x-2">
+            <button id="bannerActionBtn" onclick="openBannerAction()" class="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg font-bold">Action</button>
+            <button onclick="dismissBanner()" class="bg-slate-800 px-2.5 py-1 rounded-lg font-medium text-slate-400">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- 🔐 MILITARY AUTHENTICATION & PERSONNEL REGISTRATION PORTAL MODAL -->
+  <!-- ================================================================= -->
+  <div id="authPortalModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md hidden">
+    <div class="relative w-full max-w-md rounded-3xl border border-cyan-500/40 bg-[#090E1A] p-6 sm:p-8 shadow-2xl space-y-5">
+      <!-- Modal Header -->
+      <div class="flex justify-between items-start border-b border-slate-800 pb-4">
+        <div class="flex items-center space-x-3">
+          <div class="h-11 w-11 rounded-2xl bg-gradient-to-tr from-cyan-600 to-blue-700 flex items-center justify-center text-xl shadow-lg shadow-cyan-950 font-bold text-white">
+            🇮🇳
+          </div>
+          <div>
+            <h3 class="font-mono text-base font-extrabold text-white uppercase">Military Access Portal</h3>
+            <p class="text-[11px] text-slate-400 font-mono">Sector Alpha Command Security Gateway</p>
+          </div>
+        </div>
+        <button onclick="toggleModal('authPortalModal', false)" class="text-slate-400 hover:text-white text-xl">✕</button>
+      </div>
+
+      <!-- Tab Switcher: Login vs Register -->
+      <div class="grid grid-cols-2 gap-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800 font-mono text-xs">
+        <button onclick="setAuthTab('LOGIN')" id="authTabBtn-LOGIN" class="rounded-lg py-2 font-bold bg-cyan-950 border border-cyan-500 text-cyan-300">
+          🔐 Authorized Login
+        </button>
+        <button onclick="setAuthTab('REGISTER')" id="authTabBtn-REGISTER" class="rounded-lg py-2 font-bold bg-slate-900 text-slate-400 hover:text-white">
+          📝 Register Personnel
+        </button>
+      </div>
+
+      <!-- ================= LOGIN TAB ================= -->
+      <div id="authTab-LOGIN" class="space-y-4 text-xs font-mono">
+        <div>
+          <label class="font-bold text-slate-300 block mb-1">Service Number / Officer ID:</label>
+          <input type="text" id="loginIdInput" value="OFF-007" placeholder="e.g. OFF-007 or SOL-001" class="w-full rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2.5 text-white font-semibold focus:border-cyan-500 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-300 block mb-1">Security Access PIN:</label>
+          <input type="password" id="loginPinInput" value="1234" placeholder="••••" class="w-full rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2.5 text-white font-semibold focus:border-cyan-500 focus:outline-none">
+        </div>
+
+        <!-- 1-Click Quick Demo Profiles -->
+        <div class="space-y-1.5 pt-1">
+          <span class="text-[10px] text-slate-400 font-bold uppercase">Quick Demo Access Profiles:</span>
+          <div class="grid grid-cols-3 gap-1.5 text-[10px]">
+            <button onclick="fillLoginDemo('COMMANDER')" class="rounded-lg border border-cyan-500/30 bg-cyan-950/40 p-1.5 text-cyan-300 hover:bg-cyan-900/50 transition text-center">
+              🎖️ Commander (OFF-007)
+            </button>
+            <button onclick="fillLoginDemo('SOLDIER')" class="rounded-lg border border-emerald-500/30 bg-emerald-950/40 p-1.5 text-emerald-300 hover:bg-emerald-900/50 transition text-center">
+              🪖 Soldier (SOL-001)
+            </button>
+            <button onclick="fillLoginDemo('DOCTOR')" class="rounded-lg border border-rose-500/30 bg-rose-950/40 p-1.5 text-rose-300 hover:bg-rose-900/50 transition text-center">
+              🩺 Medic (MED-003)
+            </button>
+          </div>
+        </div>
+
+        <button onclick="handleLoginSubmit()" class="w-full rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 py-3 text-xs font-extrabold uppercase text-white shadow-xl shadow-cyan-600/30 hover:from-cyan-500 hover:to-blue-500 transition">
+          🚀 Authenticate & Enter HUD
+        </button>
+      </div>
+
+      <!-- ================= REGISTER TAB ================= -->
+      <div id="authTab-REGISTER" class="hidden space-y-3 text-xs font-mono">
+        <div>
+          <label class="font-bold text-slate-300 block mb-1">Full Name:</label>
+          <input type="text" id="regNameInput" placeholder="e.g. Lt. Karan Malhotra" class="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-white font-semibold focus:border-cyan-500 focus:outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="font-bold text-slate-300 block mb-1">Military Rank:</label>
+            <select id="regRankSelect" class="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-cyan-300 font-semibold focus:outline-none">
+              <option value="Lieutenant">Lieutenant</option>
+              <option value="Captain">Captain</option>
+              <option value="Major">Major</option>
+              <option value="Subedar">Subedar</option>
+              <option value="Havildar">Havildar</option>
+              <option value="Naik">Naik</option>
+              <option value="Sepoy">Sepoy</option>
+            </select>
+          </div>
+          <div>
+            <label class="font-bold text-slate-300 block mb-1">Role Type:</label>
+            <select id="regRoleSelect" class="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-cyan-300 font-semibold focus:outline-none">
+              <option value="SOLDIER">Field Soldier (On Duty)</option>
+              <option value="COMMANDER">Commanding Officer</option>
+              <option value="DOCTOR">Medical Trauma Doctor</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="font-bold text-slate-300 block mb-1">Service / ID:</label>
+            <input type="text" id="regIdInput" placeholder="e.g. SOL-006" class="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-white font-semibold focus:outline-none">
+          </div>
+          <div>
+            <label class="font-bold text-slate-300 block mb-1">Tactical Unit:</label>
+            <select id="regUnitSelect" class="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-white font-semibold focus:outline-none">
+              <option>10 Para SF (Alpha)</option>
+              <option>Bravo Recon Platoon</option>
+              <option>9th Gurkha Rifles</option>
+              <option>Field Medical Corps</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-300 block mb-1">📍 Assigned Duty Post / Working Location:</label>
+          <input type="text" id="regDutyPostInput" placeholder="e.g. North Ridge Bunker 5 (Border Sector)" value="North Ridge Bunker 5 (Border Sector)" class="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-white font-semibold focus:outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="font-bold text-slate-300 block mb-1">Smart Band ID:</label>
+            <input type="text" id="regBandInput" placeholder="e.g. DEV-006" class="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-white font-semibold focus:outline-none">
+          </div>
+          <div>
+            <label class="font-bold text-slate-300 block mb-1">Security PIN:</label>
+            <input type="password" id="regPinInput" value="1234" placeholder="••••" class="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-white font-semibold focus:outline-none">
+          </div>
+        </div>
+
+        <button onclick="handleRegisterSubmit()" class="w-full rounded-xl bg-gradient-to-r from-emerald-600 to-cyan-600 py-3 text-xs font-extrabold uppercase text-white shadow-xl shadow-emerald-950 hover:from-emerald-500 hover:to-cyan-500 transition">
+          🎖️ Enlist Personnel & Activate IoT Band
+        </button>
+      </div>
+
+      <div id="authStatusMsg" class="hidden rounded-xl border p-2 text-center text-xs font-mono font-bold"></div>
+    </div>
+  </div>
+
+  <!-- ⌚ SOLDIER'S WEARABLE SMART BAND WIDGET MODAL (WITH LIVE COMMAND CONFIRMATION DISPLAY) -->
+  <div id="smartBandModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm hidden">
+    <div class="relative w-full max-w-lg rounded-3xl border border-rose-500/50 bg-[#070B12] p-6 shadow-2xl space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <div class="flex items-center space-x-2.5">
+          <div class="h-9 w-9 rounded-xl bg-rose-950 border border-rose-500/50 flex items-center justify-center text-rose-400 font-bold">
+            ⌚
+          </div>
+          <div>
+            <h3 class="font-mono text-sm font-bold text-white uppercase">Soldier's Wearable Smart Band (Watch)</h3>
+            <p class="text-[11px] text-slate-400">Receives live approval & dispatch notifications from Commander</p>
+          </div>
+        </div>
+        <button onclick="toggleModal('smartBandModal', false)" class="text-slate-400 hover:text-white text-xl">✕</button>
+      </div>
+
+      <!-- Select Soldier Wearing Watch -->
+      <div class="flex items-center justify-between bg-slate-900/60 p-2.5 rounded-xl border border-slate-800 text-xs font-mono">
+        <span class="text-slate-400 font-medium">Wearer Soldier:</span>
+        <select id="bandSoldierSelect" onchange="changeBandSoldier(this.value)" class="rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1 text-cyan-300 font-bold focus:outline-none">
+          <option value="SOL-001">SOL-001 — Havildar Rajesh Kumar (Alpha)</option>
+          <option value="SOL-002">SOL-002 — Naik Arjun Singh (Alpha)</option>
+          <option value="SOL-003">SOL-003 — Lance Naik Deepankar Das (Bravo)</option>
+          <option value="SOL-004">SOL-004 — Sepoy Manoj Verma (Bravo)</option>
+          <option value="SOL-005">SOL-005 — Subedar Gurpreet Singh (Charlie)</option>
+        </select>
+      </div>
+
+      <!-- Physical Watch Body -->
+      <div class="flex flex-col items-center">
+        <div class="w-72 rounded-3xl border-4 border-slate-700 bg-slate-950 p-4 shadow-2xl shadow-rose-950/40 space-y-3">
+          <div class="flex items-center justify-between text-[10px] font-mono text-cyan-400 border-b border-slate-800 pb-1.5">
+            <span>RAKSHA BIO-BAND v2.4</span>
+            <span id="bandDeviceLabel">DEV-001</span>
+          </div>
+
+          <!-- Watch Screen -->
+          <div class="rounded-2xl bg-black p-3.5 font-mono border border-slate-800 space-y-2">
+            <div class="flex justify-between text-xs">
+              <span id="bandNameLabel" class="text-white font-bold">RAJESH</span>
+              <span class="text-emerald-400">🔋 88%</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div class="rounded-xl bg-slate-900/80 p-1.5 text-center">
+                <span class="text-[10px] text-rose-400">💓 PULSE</span>
+                <p id="bandHrLabel" class="text-sm font-bold text-white mt-0.5">78 BPM</p>
+              </div>
+              <div class="rounded-xl bg-slate-900/80 p-1.5 text-center">
+                <span class="text-[10px] text-amber-400">🌡️ TEMP</span>
+                <p id="bandTempLabel" class="text-sm font-bold text-white mt-0.5">36.7 °C</p>
+              </div>
+            </div>
+
+            <div class="text-[9px] text-slate-400 text-center border-t border-slate-800 pt-1" id="bandGpsLabel">
+              GPS: 17.442°N, 78.349°E
+            </div>
+            <div class="text-[9px] text-amber-300 font-mono text-center truncate" id="bandDutyPostLabel">
+              📍 Post: North Ridge Bunker 4
+            </div>
+
+            <!-- 📡 INCOMING LIVE COMMANDER NOTIFICATION MESSAGE ON WATCH SCREEN -->
+            <div id="watchIncomingMsgBox" class="rounded-xl border border-emerald-500/60 bg-emerald-950/90 p-2.5 text-left text-[10px] space-y-1 glow-green">
+              <div class="flex justify-between text-emerald-300 font-bold uppercase">
+                <span>📡 COMMAND DISPATCH NOTIFICATION</span>
+                <span class="animate-ping">●</span>
+              </div>
+              <p class="text-white font-semibold leading-tight" id="watchIncomingMsgText">
+                System Initialized. All units operational in Sector Alpha.
+              </p>
+              <p class="text-[9px] text-emerald-400" id="watchIncomingMsgTime">From: Capt. Vikram (Base Command)</p>
+            </div>
+          </div>
+
+          <!-- BIG PHYSICAL SOS BUTTON ON WATCH -->
+          <button onclick="triggerBandAction('SOS')" class="flex h-14 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-rose-600 to-red-600 font-mono text-xs font-extrabold uppercase text-white shadow-xl shadow-rose-600/40 hover:from-rose-500 hover:to-red-500 active:scale-95 transition">
+            <span class="text-base mr-1.5">🚨</span>
+            <span>PRESS SOS PANIC BUTTON</span>
+          </button>
+          <span class="block text-center text-[9px] font-mono text-slate-500">Transmits emergency beacon to Commander HUD</span>
+        </div>
+      </div>
+
+      <!-- Quick Action Triggers for Soldier -->
+      <div class="space-y-2 pt-1">
+        <label class="text-[11px] font-mono font-bold text-slate-400 uppercase">Other Band Triggers:</label>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <button onclick="triggerBandAction('HEALTH_DISTRESS')" class="rounded-xl border border-rose-500/40 bg-rose-950/40 py-2 font-semibold text-rose-300 hover:bg-rose-900/50 transition">
+            🚑 Health Bad (Send Doctor)
+          </button>
+          <button onclick="triggerBandAction('COMBAT_DANGER')" class="rounded-xl border border-amber-500/40 bg-amber-950/40 py-2 font-semibold text-amber-300 hover:bg-amber-900/50 transition">
+            ⚔️ In Danger (Send Backup)
+          </button>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 text-xs pt-1">
+          <button onclick="triggerBandAction('NEED_WATER')" class="rounded-lg border border-cyan-500/30 bg-cyan-950/40 py-1.5 text-cyan-300 font-medium hover:bg-cyan-900/40 transition">
+            💧 Need Water
+          </button>
+          <button onclick="triggerBandAction('NEED_FOOD')" class="rounded-lg border border-emerald-500/30 bg-emerald-950/40 py-1.5 text-emerald-300 font-medium hover:bg-emerald-900/40 transition">
+            🍞 Need Food
+          </button>
+          <button onclick="triggerBandAction('NEED_AMMO')" class="rounded-lg border border-yellow-500/30 bg-yellow-950/40 py-1.5 text-yellow-300 font-medium hover:bg-yellow-900/40 transition">
+            🔫 Need Ammo
+          </button>
+        </div>
+      </div>
+
+      <div id="bandFeedbackMsg" class="hidden rounded-lg border border-cyan-500/50 bg-cyan-950/80 p-2 text-center text-xs font-mono font-bold text-cyan-300 animate-pulse"></div>
+    </div>
+  </div>
+
+  <!-- COMMAND DISPATCH ACTION MODAL -->
+  <div id="dispatchModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm hidden">
+    <div class="w-full max-w-lg rounded-2xl border border-cyan-500/40 bg-[#090E1A] p-6 shadow-2xl space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <div>
+          <h3 class="font-mono text-base font-bold text-white uppercase" id="dspModalTitle">Command Dispatch Action</h3>
+          <p class="text-xs text-slate-400 font-mono" id="dspModalTarget">Target Soldier: SOL-001</p>
+        </div>
+        <button onclick="toggleModal('dispatchModal', false)" class="text-slate-400 hover:text-white text-xl">✕</button>
+      </div>
+
+      <!-- Action Selector Tabs -->
+      <div class="grid grid-cols-3 gap-2 text-xs font-mono">
+        <button onclick="setDispatchTab('DOCTOR')" id="dspTab-DOCTOR" class="dspTabBtn rounded-xl p-2.5 font-bold bg-rose-950 border border-rose-500 text-rose-300">🚑 Send Doctor</button>
+        <button onclick="setDispatchTab('REINFORCE')" id="dspTab-REINFORCE" class="dspTabBtn rounded-xl p-2.5 font-bold bg-slate-900 border border-slate-800 text-slate-400">🛡️ Assign Backup</button>
+        <button onclick="setDispatchTab('SUPPLIES')" id="dspTab-SUPPLIES" class="dspTabBtn rounded-xl p-2.5 font-bold bg-slate-900 border border-slate-800 text-slate-400">📦 Drop Supplies</button>
+      </div>
+
+      <!-- DOCTOR CONTENT -->
+      <div id="dspContent-DOCTOR" class="dspContent space-y-3 rounded-xl border border-rose-500/20 bg-rose-950/10 p-4 text-xs font-mono">
+        <label class="font-bold text-slate-300">Select Field Doctor / Medical Trauma Team:</label>
+        <select id="doctorSelect" class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-white font-semibold">
+          <option>Dr. Major Ananya Roy (Field Hospital Alpha Base)</option>
+          <option>Dr. Captain Suresh Nair (Mobile Trauma Unit 3)</option>
+          <option>Air Ambulance Helicopter Medical Evac Team</option>
+        </select>
+        <div class="bg-slate-950 p-2.5 rounded text-[11px] text-slate-300 space-y-1">
+          <p>🩺 Doctor dispatched with Trauma Kit, Defibrillator, and IV Fluids</p>
+          <p class="text-emerald-400">⏱ Estimated Arrival Time (ETA): ~4 Minutes</p>
+          <p class="text-cyan-400">📡 A confirmation message will be sent to the soldier's watch band immediately!</p>
+        </div>
+      </div>
+
+      <!-- REINFORCEMENTS CONTENT -->
+      <div id="dspContent-REINFORCE" class="dspContent hidden space-y-3 rounded-xl border border-amber-500/20 bg-amber-950/10 p-4 text-xs font-mono">
+        <label class="font-bold text-slate-300">Select Reinforcement Squad / Quick Reaction Team:</label>
+        <select id="backupSelect" class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-white font-semibold">
+          <option>Quick Reaction Team Alpha (4 Commandos - Nearest)</option>
+          <option>Bravo Recon Support Squad (6 Personnel)</option>
+          <option>Armored Tactical BMP-2 Vehicle Unit</option>
+        </select>
+        <div class="bg-slate-950 p-2.5 rounded text-[11px] text-slate-300 space-y-1">
+          <p>🛡️ Commandos dispatched to secure coordinates and extract soldier</p>
+          <p class="text-emerald-400">⏱ Estimated Arrival Time (ETA): ~6 Minutes</p>
+          <p class="text-cyan-400">📡 Soldier's watch band will display: "Backup Squad En Route. Hold Tight!"</p>
+        </div>
+      </div>
+
+      <!-- SUPPLIES CONTENT -->
+      <div id="dspContent-SUPPLIES" class="dspContent hidden space-y-3 rounded-xl border border-cyan-500/20 bg-cyan-950/10 p-4 text-xs font-mono">
+        <label class="font-bold text-slate-300">Select Supplies to Dispatch:</label>
+        <div class="grid grid-cols-2 gap-2 text-[11px]">
+          <label class="flex items-center space-x-2 bg-slate-900 p-2 rounded border border-slate-800"><input type="checkbox" checked class="accent-cyan-500"><span>💧 Water Packs (5L)</span></label>
+          <label class="flex items-center space-x-2 bg-slate-900 p-2 rounded border border-slate-800"><input type="checkbox" checked class="accent-cyan-500"><span>🍞 MRE Rations (3 Days)</span></label>
+          <label class="flex items-center space-x-2 bg-slate-900 p-2 rounded border border-slate-800"><input type="checkbox" checked class="accent-cyan-500"><span>🔫 5.56mm Ammo (180 Rds)</span></label>
+          <label class="flex items-center space-x-2 bg-slate-900 p-2 rounded border border-slate-800"><input type="checkbox" class="accent-cyan-500"><span>🩹 Trauma First Aid</span></label>
+        </div>
+        <p class="text-cyan-300 text-[11px]">Method: 🛸 Autonomous Drone Air Drop (ETA 3 mins)</p>
+        <p class="text-emerald-400 text-[11px]">📡 Soldier's watch will confirm: "Drone Air Drop Initiated!"</p>
+      </div>
+
+      <div id="dspSuccessMsg" class="hidden rounded-lg border border-emerald-500 bg-emerald-950 p-2 text-center text-xs font-mono font-bold text-emerald-300"></div>
+
+      <div class="flex justify-end space-x-3 pt-2">
+        <button onclick="toggleModal('dispatchModal', false)" class="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-xs text-slate-300">Cancel</button>
+        <button onclick="confirmDispatchAction()" class="rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 px-5 py-2 text-xs font-bold text-white shadow-lg shadow-cyan-600/30">Confirm & Dispatch Action</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const soldiers = [
+      { 
+        id: 'SOL-001', 
+        name: 'Havildar Rajesh Kumar', 
+        rank: 'Havildar', 
+        unit: '10 Para SF (Alpha)', 
+        device: 'DEV-001', 
+        dutyPost: 'North Ridge Bunker 4 (Border Post Alpha)',
+        roleDuty: 'Border Patrol & Perimeter Surveillance',
+        attendance: 'PRESENT_PATROL', 
+        hr: 78, temp: 36.7, battery: 88, water: 80, food: 85, ammo: 180, 
+        lat: 17.4425, lng: 78.3495, status: 'NORMAL', tactical: 'ON_PATROL', lastCheckin: '10 mins ago' 
+      },
+      { 
+        id: 'SOL-002', 
+        name: 'Naik Arjun Singh', 
+        rank: 'Naik', 
+        unit: '10 Para SF (Alpha)', 
+        device: 'DEV-002', 
+        dutyPost: 'Forward Observation Post Bravo (Grid 78.35)',
+        roleDuty: 'Forward Sniper Recon & Sector Overwatch',
+        attendance: 'PRESENT_PATROL', 
+        hr: 84, temp: 37.1, battery: 74, water: 85, food: 90, ammo: 210, 
+        lat: 17.4382, lng: 78.3541, status: 'NORMAL', tactical: 'ON_PATROL', lastCheckin: '15 mins ago' 
+      },
+      { 
+        id: 'SOL-003', 
+        name: 'Lance Naik Deepankar Das', 
+        rank: 'Lance Naik', 
+        unit: 'Bravo Recon Platoon', 
+        device: 'DEV-003', 
+        dutyPost: 'East Valley Checkpoint 9 (Dense Ravine)',
+        roleDuty: 'Combat Patrol & Buffer Zone Clearance',
+        attendance: 'PRESENT_PATROL', 
+        hr: 114, temp: 38.3, battery: 42, water: 20, food: 35, ammo: 45, 
+        lat: 17.4468, lng: 78.3412, status: 'WARNING', tactical: 'IN_DANGER', lastCheckin: '5 mins ago' 
+      },
+      { 
+        id: 'SOL-004', 
+        name: 'Sepoy Manoj Verma', 
+        rank: 'Sepoy', 
+        unit: 'Bravo Recon Platoon', 
+        device: 'DEV-004', 
+        dutyPost: 'Main Base HQ Armoury & Perimeter Gate 2',
+        roleDuty: 'Base Perimeter Guard & Logistics Security',
+        attendance: 'STANDBY_BASE', 
+        hr: 72, temp: 36.5, battery: 15, water: 45, food: 60, ammo: 150, 
+        lat: 17.4351, lng: 78.3429, status: 'WARNING', tactical: 'ON_PATROL', lastCheckin: '25 mins ago' 
+      },
+      { 
+        id: 'SOL-005', 
+        name: 'Subedar Gurpreet Singh', 
+        rank: 'Subedar', 
+        unit: 'Charlie Contingent', 
+        device: 'DEV-005', 
+        dutyPost: 'East Ridge Outpost 7 (Hostile Terrain Sector)',
+        roleDuty: 'Deep Valley Long-Range Reconnaissance',
+        attendance: 'MISSING_MIA', 
+        hr: 0, temp: 0, battery: 0, water: 0, food: 0, ammo: 0, 
+        lat: 17.4495, lng: 78.3582, status: 'CRITICAL', tactical: 'MISSING', lastCheckin: '60 mins ago (Lost Signal)' 
+      }
+    ];
+
+    let alerts = [
+      { id: 'ALT-1001', soldier: 'SOL-003 (Lance Naik Deepankar)', soldierId: 'SOL-003', type: 'HEALTH_DISTRESS', severity: 'HIGH', msg: 'Core temp elevated at 38.3°C & Dehydration. Doctor needed.', time: '5 mins ago' },
+      { id: 'ALT-1002', soldier: 'SOL-005 (Subedar Gurpreet)', soldierId: 'SOL-005', type: 'SOLDIER_MISSING', severity: 'CRITICAL', msg: 'SOLDIER MISSING: Out of contact for 60m. Backup required.', time: '60 mins ago' }
+    ];
+
+    let resolvedAlerts = [
+      { id: 'ALT-0998', soldier: 'SOL-001 (Havildar Rajesh)', type: 'ROUTINE_CHECKIN', action: 'Routine Biometrics Verified by Officer', time: '2 hours ago' }
+    ];
+
+    let currentTargetSoldierId = 'SOL-001';
+    let currentDispatchTab = 'DOCTOR';
+    let selectedChartSoldier = 'SOL-001';
+    let miniMap, fullMap, miaMap, chart;
+    const chartLabels = [];
+    
+    // Telemetry history for ALL soldiers
+    const soldierHistory = {
+      'SOL-001': [],
+      'SOL-002': [],
+      'SOL-003': [],
+      'SOL-004': [],
+      'SOL-005': []
+    };
+
+    const soldierChartColors = {
+      'SOL-001': { border: '#06B6D4', bg: 'rgba(6, 182, 212, 0.15)', name: 'Rajesh (SOL-001)' },
+      'SOL-002': { border: '#10B981', bg: 'rgba(16, 185, 129, 0.15)', name: 'Arjun (SOL-002)' },
+      'SOL-003': { border: '#F43F5E', bg: 'rgba(244, 63, 94, 0.15)', name: 'Deepankar (SOL-003)' },
+      'SOL-004': { border: '#F59E0B', bg: 'rgba(245, 158, 11, 0.15)', name: 'Manoj (SOL-004)' },
+      'SOL-005': { border: '#8B5CF6', bg: 'rgba(139, 92, 246, 0.15)', name: 'Gurpreet (SOL-005)' }
+    };
+
+    // Beep sound for incoming watch notifications & alarms
+    function playWatchNotificationSound() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587, audioCtx.currentTime); // D5
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.15); // A5
+        osc.frequency.setValueAtTime(1174, audioCtx.currentTime + 0.3); // D6
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.6);
+      } catch(e) {}
+    }
+
+    function playAudioSiren() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        osc.frequency.setValueAtTime(440, audioCtx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.6);
+      } catch(e) {}
+    }
+
+    let currentTileLayer = null;
+    let fullMapTileLayer = null;
+    const fullMapMarkers = {};
+    const miniMapMarkers = {};
+    let currentMapLayerType = 'osm';
+
+    // 100% Free Open Geospatial Layers (Zero Google/Mapbox API Keys Required)
+    const mapTileUrls = {
+      osm: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      terrain: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+      dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    };
+
+    function setMapLayer(layerType) {
+      currentMapLayerType = layerType;
+      
+      // Update UI button styles
+      ['satellite', 'osm', 'terrain', 'dark'].forEach(t => {
+        const btn = document.getElementById(`layerBtn-${t}`);
+        if(btn) {
+          btn.className = t === layerType 
+            ? 'rounded-lg px-2.5 py-1 font-bold bg-cyan-950 text-cyan-300 border border-cyan-500 transition'
+            : 'rounded-lg px-2.5 py-1 font-bold text-slate-400 hover:text-white transition';
+        }
+      });
+
+      if(fullMap && fullMapTileLayer) {
+        fullMap.removeLayer(fullMapTileLayer);
+        fullMapTileLayer = L.tileLayer(mapTileUrls[layerType], {
+          maxZoom: 19,
+          attribution: layerType === 'satellite' ? '&copy; ESRI World Satellite' : layerType === 'terrain' ? '&copy; ESRI Topo Terrain' : '&copy; OpenStreetMap Contributors'
+        }).addTo(fullMap);
+      }
+    }
+
+    function initMaps() {
+      // 1. Mini Map on Dashboard (Shows Real World Street & State Map directly)
+      miniMap = L.map('miniMap').setView([17.4425, 78.3495], 14);
+      L.tileLayer(mapTileUrls.osm, { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(miniMap);
+      soldiers.forEach(s => {
+        const color = s.tactical === 'MISSING' ? '#EF4444' : s.status === 'WARNING' ? '#F59E0B' : '#10B981';
+        miniMapMarkers[s.id] = L.circleMarker([s.lat, s.lng], { color, radius: 7 }).addTo(miniMap)
+          .bindPopup(`<b>${s.name} (${s.id})</b><br>📍 <b>Post:</b> ${s.dutyPost}<br>🎯 <b>Duty:</b> ${s.roleDuty}<br>Status: ${s.tactical}`);
+      });
+
+      // 2. Full Real-Time Tactical Geospatial Map (Default: India States & Real World Map)
+      fullMap = L.map('fullMap').setView([17.4400, 78.3489], 14);
+      fullMapTileLayer = L.tileLayer(mapTileUrls.osm, {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap & State Topo Grid'
+      }).addTo(fullMap);
+
+      // 5.0 km Geofence Safe Radius Perimeter
+      L.circle([17.4400, 78.3489], {
+        radius: 5000,
+        color: '#06B6D4',
+        fillColor: '#06B6D4',
+        fillOpacity: 0.06,
+        dashArray: '6, 12',
+        weight: 2
+      }).addTo(fullMap).bindPopup('<b>🏢 BASE HQ 5.0 KM GEOFENCE PERIMETER</b><br>Safe Operational Buffer Zone');
+
+      // Base HQ Flag Marker
+      L.circleMarker([17.4400, 78.3489], {
+        color: '#06B6D4',
+        fillColor: '#06B6D4',
+        fillOpacity: 0.9,
+        radius: 10
+      }).addTo(fullMap).bindPopup('<b>🇮🇳 SECTOR ALPHA BASE COMMAND HQ</b><br>Coordinates: 17.4400°N, 78.3489°E<br>Main Communications Radar Active');
+
+      // Live Soldier GPS Markers
+      soldiers.forEach(s => {
+        const isMissing = s.tactical === 'MISSING' || s.attendance === 'MISSING_MIA';
+        const isWarning = s.status === 'WARNING' || s.tactical === 'IN_DANGER';
+        const color = isMissing ? '#EF4444' : isWarning ? '#F59E0B' : '#10B981';
+
+        fullMapMarkers[s.id] = L.circleMarker([s.lat, s.lng], {
+          color: '#ffffff',
+          fillColor: color,
+          fillOpacity: 1,
+          radius: 8,
+          weight: 2
+        }).addTo(fullMap).bindPopup(`
+          <div class="font-mono text-xs text-slate-900 p-1">
+            <h4 class="font-bold text-sm text-cyan-800">${s.name} (${s.id})</h4>
+            <p class="text-[11px] text-slate-700 mt-0.5"><b>Unit:</b> ${s.unit}</p>
+            <p class="text-[11px] text-slate-700">📍 <b>Post:</b> ${s.dutyPost || 'Alpha Sector'}</p>
+            <p class="text-[11px] text-slate-700">🎯 <b>Task:</b> ${s.roleDuty || 'Patrol'}</p>
+            <div class="mt-1.5 pt-1 border-t border-slate-300 flex justify-between font-bold">
+              <span class="${s.hr > 100 ? 'text-rose-600' : 'text-emerald-700'}">💓 ${s.hr > 0 ? s.hr + ' BPM' : 'OFFLINE'}</span>
+              <span>🌡️ ${s.temp > 0 ? s.temp + '°C' : '--'}</span>
+              <span>💧 ${s.water}%</span>
+            </div>
+          </div>
+        `);
+      });
+
+      // 3. MIA Search Radar Map
+      miaMap = L.map('miaMap').setView([17.4495, 78.3582], 15);
+      L.tileLayer(mapTileUrls.satellite, { maxZoom: 19 }).addTo(miaMap);
+      L.circle([17.4495, 78.3582], { radius: 800, color: '#EF4444', fillOpacity: 0.2, dashArray: '4, 8' }).addTo(miaMap);
+      L.marker([17.4495, 78.3582]).addTo(miaMap).bindPopup('<b>LAST KNOWN GPS COORDINATES</b><br>Subedar Gurpreet Singh').openPopup();
+    }
+
+    function focusMapOnCoords(lat, lng, title) {
+      if(fullMap) {
+        fullMap.setView([lat, lng], 16);
+      }
+    }
+
+    function focusMapOnSoldier(soldierId) {
+      const sol = soldiers.find(s => s.id === soldierId);
+      if(sol && fullMap) {
+        fullMap.setView([sol.lat, sol.lng], 16);
+        if(fullMapMarkers[sol.id]) {
+          fullMapMarkers[sol.id].openPopup();
+        }
+      }
+    }
+
+    function initChart() {
+      const ctx = document.getElementById('liveChart').getContext('2d');
+      for(let i=10; i>=0; i--) {
+        chartLabels.push(new Date(Date.now() - i*3000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'}));
+        soldiers.forEach(s => {
+          const base = s.hr || (s.tactical === 'MISSING' ? 0 : 75);
+          soldierHistory[s.id].push(base ? Math.max(40, base + Math.floor(Math.sin(i + s.id.charCodeAt(6))*4)) : 0);
+        });
+      }
+
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: chartLabels,
+          datasets: getChartDatasets(selectedChartSoldier)
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          scales: {
+            y: { min: 40, max: 160, grid: { color: '#1E293B' }, ticks: { color: '#94A3B8' } },
+            x: { grid: { color: '#1E293B' }, ticks: { color: '#94A3B8' } }
+          }
+        }
+      });
+    }
+
+    function getChartDatasets(soldierId) {
+      if(soldierId === 'ALL') {
+        return soldiers.map(s => ({
+          label: `${s.name.split(' ')[1] || s.name} (${s.id})`,
+          data: [...soldierHistory[s.id]],
+          borderColor: soldierChartColors[s.id].border,
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          tension: 0.3,
+          pointRadius: 2
+        }));
+      } else {
+        const sol = soldiers.find(s => s.id === soldierId) || soldiers[0];
+        const color = soldierChartColors[sol.id] || { border: '#06B6D4', bg: 'rgba(6, 182, 212, 0.15)' };
+        return [{
+          label: `${sol.name} (${sol.id}) Heart Rate (BPM)`,
+          data: [...soldierHistory[sol.id]],
+          borderColor: color.border,
+          backgroundColor: color.bg,
+          fill: true,
+          borderWidth: 2.5,
+          tension: 0.3,
+          pointRadius: 3
+        }];
+      }
+    }
+
+    function changeChartSoldier(soldierId) {
+      selectedChartSoldier = soldierId;
+      document.getElementById('chartTitleText').innerText = soldierId === 'ALL'
+        ? 'Live Pulse Comparison (All Soldiers)' 
+        : `Live Pulse Rate (BPM) — ${soldiers.find(s => s.id === soldierId)?.name || soldierId}`;
+      if(chart) {
+        chart.data.datasets = getChartDatasets(soldierId);
+        chart.update();
+      }
+    }
+
+    function renderUI() {
+      const present = soldiers.filter(s => s.attendance === 'PRESENT_PATROL').length;
+      const standby = soldiers.filter(s => s.attendance === 'STANDBY_BASE').length;
+      const sick = soldiers.filter(s => s.attendance === 'SICK_BAY').length;
+      const missing = soldiers.filter(s => s.attendance === 'MISSING_MIA' || s.tactical === 'MISSING').length;
+
+      document.getElementById('attPresentCount').innerText = `${present} Soldiers`;
+      document.getElementById('attStandbyCount').innerText = `${standby} Soldiers`;
+      document.getElementById('attSickCount').innerText = `${sick} Soldiers`;
+      document.getElementById('attMissingCount').innerText = `${missing} Soldiers`;
+      document.getElementById('navMissingBadge').innerText = missing;
+      const miaBadge = document.getElementById('miaCountBadge');
+      if(miaBadge) miaBadge.innerText = `${missing} MIA`;
+
+      // Calculate Fleet Average Pulse
+      const activePulseSoldiers = soldiers.filter(s => s.hr > 0);
+      const avgPulse = activePulseSoldiers.length > 0 
+        ? Math.round(activePulseSoldiers.reduce((acc, s) => acc + s.hr, 0) / activePulseSoldiers.length)
+        : 75;
+      const highVitalsCount = soldiers.filter(s => s.hr > 100 || s.temp > 38).length;
+      
+      const fleetHrEl = document.getElementById('fleetAvgHeartRate');
+      if(fleetHrEl) fleetHrEl.innerHTML = `${avgPulse} <span class="text-xs text-slate-400">BPM Avg</span>`;
+      const fleetSummaryEl = document.getElementById('fleetVitalsSummary');
+      if(fleetSummaryEl) fleetSummaryEl.innerText = `${activePulseSoldiers.length} Active Tracked • ${highVitalsCount} High Distress`;
+
+      // 🔴 ALL SOLDIERS REAL-TIME PULSE RADAR STRIP
+      const pulseStripEl = document.getElementById('allSoldiersPulseStrip');
+      if(pulseStripEl) {
+        pulseStripEl.innerHTML = soldiers.map(s => {
+          const isHigh = s.hr > 100;
+          const isMissing = s.tactical === 'MISSING' || s.attendance === 'MISSING_MIA' || s.hr === 0;
+          const pulseColor = isMissing ? 'text-rose-400 border-rose-900 bg-rose-950/40' : isHigh ? 'text-amber-300 border-amber-500/60 bg-amber-950/40 glow-amber' : 'text-emerald-300 border-slate-800 bg-slate-950/80';
+          const heartAnim = isMissing ? 'opacity-30' : isHigh ? 'animate-ping' : 'animate-pulse';
+          
+          return `
+            <div onclick="changeChartSoldier('${s.id}'); document.getElementById('chartSoldierSelect').value='${s.id}';" class="cursor-pointer rounded-xl border ${pulseColor} p-2.5 transition hover:scale-105">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-white text-xs truncate">${s.name.split(' ')[1] || s.name}</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.2 rounded bg-slate-900 text-slate-400 border border-slate-800">${s.id}</span>
+              </div>
+              <div class="mt-2 flex items-center justify-between">
+                <div class="flex items-center space-x-1.5">
+                  <span class="inline-flex items-center justify-center w-5 h-5 rounded-full ${isHigh ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'} ${heartAnim}">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                  </span>
+                  <span class="text-base font-extrabold font-mono text-white">${s.hr > 0 ? s.hr : '--'}</span>
+                  <span class="text-[9px] text-slate-400 font-mono">BPM</span>
+                </div>
+                <div class="text-right text-[10px] font-mono">
+                  <span class="${isHigh ? 'text-amber-400 font-bold' : 'text-slate-400'}">${s.temp > 0 ? s.temp + '°C' : 'OFFLINE'}</span>
+                </div>
+              </div>
+              <div class="mt-1.5 flex justify-between items-center text-[9px] font-mono border-t border-slate-800/80 pt-1">
+                <span class="${isMissing ? 'text-rose-400 font-bold' : isHigh ? 'text-amber-400 font-bold' : 'text-emerald-400'}">${s.tactical}</span>
+                <span class="text-cyan-400 hover:underline">ECG Graph →</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Dashboard Soldier Cards
+      document.getElementById('soldierCardContainer').innerHTML = soldiers.map(s => `
+        <div class="rounded-2xl border ${s.tactical==='MISSING'||s.status==='CRITICAL' ? 'border-rose-500 bg-rose-950/30 glow-red' : s.status==='WARNING'||s.tactical==='IN_DANGER'||s.hr>100 ? 'border-amber-500/60 bg-amber-950/20' : 'border-slate-800 bg-slate-950/60'} p-4 text-xs">
+          <div class="flex justify-between font-bold text-white">
+            <span>${s.name}</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded ${s.status==='NORMAL'?'bg-emerald-950 text-emerald-400 border border-emerald-800':s.status==='WARNING'||s.hr>100?'bg-amber-950 text-amber-400 border border-amber-800':'bg-rose-950 text-rose-400 border border-rose-800'}">${s.tactical}</span>
+          </div>
+          <p class="text-[10px] text-cyan-400 font-mono mt-0.5">${s.id} • ${s.unit}</p>
+
+          <!-- 📍 Working Location / Duty Post -->
+          <div class="mt-2.5 bg-slate-900/80 p-2 rounded-xl border border-slate-800/80 space-y-0.5 text-[10px] font-mono">
+            <div class="flex items-center space-x-1.5 text-slate-300">
+              <span class="text-cyan-400">📍</span>
+              <span class="text-white font-semibold truncate">${s.dutyPost || 'Field Sector Alpha'}</span>
+            </div>
+            <div class="flex items-center space-x-1.5 text-slate-400">
+              <span class="text-emerald-400">🎯</span>
+              <span class="truncate">${s.roleDuty || 'Active Patrol Assignment'}</span>
+            </div>
+          </div>
+
+          <div class="mt-3 grid grid-cols-3 gap-1.5 text-center text-[10px] font-mono bg-slate-900/80 p-2 rounded-xl border border-slate-800">
+            <div class="cursor-pointer hover:bg-slate-800 p-1 rounded" onclick="changeChartSoldier('${s.id}'); document.getElementById('chartSoldierSelect').value='${s.id}';"><span class="text-rose-400 font-bold flex items-center justify-center space-x-1"><svg class="w-3 h-3 text-rose-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg><span>Pulse</span></span><p class="font-bold text-white text-xs mt-0.5">${s.hr ? s.hr + ' BPM' : '--'}</p></div>
+            <div><span class="text-amber-400">🌡️ Temp</span><p class="font-bold text-white text-xs mt-0.5">${s.temp ? s.temp + '°C' : '--'}</p></div>
+            <div><span class="text-cyan-400">💧 Water</span><p class="font-bold text-white text-xs mt-0.5">${s.water}%</p></div>
+          </div>
+
+          <div class="mt-3 pt-2 border-t border-slate-800 grid grid-cols-3 gap-1 text-[10px] font-mono font-bold">
+            <button onclick="openDispatchModal('${s.id}', 'DOCTOR')" class="rounded-lg bg-rose-950/80 border border-rose-600/40 text-rose-300 py-1 hover:bg-rose-900 transition">🚑 Doctor</button>
+            <button onclick="openDispatchModal('${s.id}', 'REINFORCE')" class="rounded-lg bg-amber-950/80 border border-amber-600/40 text-amber-300 py-1 hover:bg-amber-900 transition">🛡️ Backup</button>
+            <button onclick="openDispatchModal('${s.id}', 'SUPPLIES')" class="rounded-lg bg-cyan-950/80 border border-cyan-600/40 text-cyan-300 py-1 hover:bg-cyan-900 transition">📦 Drop</button>
+          </div>
+        </div>
+      `).join('');
+
+      // Attendance Roll-Call Table
+      document.getElementById('attendanceTableBody').innerHTML = soldiers.map(s => `
+        <tr class="hover:bg-slate-800/40">
+          <td class="p-3.5 font-bold text-cyan-400 flex items-center space-x-2.5">
+            <div class="h-8 w-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-sm font-bold text-white">
+              🪖
+            </div>
+            <span>${s.id}</span>
+          </td>
+          <td class="p-3.5"><strong class="text-white text-sm">${s.name}</strong><br><span class="text-[11px] text-slate-400">${s.rank}</span></td>
+          <td class="p-3.5">${s.unit}</td>
+          <td class="p-3.5">
+            <div class="flex items-center space-x-1.5">
+              <span class="text-cyan-400">📍</span>
+              <strong class="text-white text-xs">${s.dutyPost || 'Field Post'}</strong>
+            </div>
+            <span class="text-[10px] text-slate-400 block mt-0.5">🎯 ${s.roleDuty || 'General Patrol'}</span>
+          </td>
+          <td class="p-3.5">
+            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${s.attendance==='PRESENT_PATROL'?'bg-emerald-950 text-emerald-300 border border-emerald-800':s.attendance==='STANDBY_BASE'?'bg-cyan-950 text-cyan-300 border border-cyan-800':s.attendance==='SICK_BAY'?'bg-amber-950 text-amber-300 border border-amber-800':'bg-rose-950 text-rose-300 border border-rose-800'}">
+              ${s.attendance.replace(/_/g, ' ')}
+            </span>
+          </td>
+          <td class="p-3.5 text-slate-400">${s.lastCheckin}</td>
+          <td class="p-3.5 text-right">
+            <select onchange="updateSoldierAttendance('${s.id}', this.value)" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-cyan-300 font-semibold focus:outline-none">
+              <option value="PRESENT_PATROL" ${s.attendance==='PRESENT_PATROL'?'selected':''}>Present (On Patrol)</option>
+              <option value="STANDBY_BASE" ${s.attendance==='STANDBY_BASE'?'selected':''}>Standby at Base</option>
+              <option value="SICK_BAY" ${s.attendance==='SICK_BAY'?'selected':''}>Sick Bay (Hospital)</option>
+              <option value="MISSING_MIA" ${s.attendance==='MISSING_MIA'?'selected':''}>Missing in Action (MIA)</option>
+            </select>
+          </td>
+        </tr>
+      `).join('');
+
+      // Missing Soldiers List
+      const missingList = soldiers.filter(s => s.attendance === 'MISSING_MIA' || s.tactical === 'MISSING');
+      document.getElementById('missingSoldierList').innerHTML = missingList.length === 0 ? `
+        <div class="rounded-2xl border border-emerald-500/30 bg-emerald-950/20 p-8 text-center text-emerald-400">
+          <p class="text-2xl mb-1">✓</p>
+          <p class="font-bold text-sm">All 5 Soldiers Accounted For</p>
+          <p class="text-xs text-slate-400 mt-1">Zero missing soldiers reported in Sector Alpha.</p>
+        </div>
+      ` : missingList.map(s => `
+        <div onclick="pinpointMissingSoldier('${s.id}')" class="cursor-pointer rounded-2xl border border-rose-500/60 bg-rose-950/30 p-4 hover:bg-rose-900/40 transition glow-red">
+          <div class="flex justify-between font-bold text-white text-xs">
+            <span>🔎 ${s.name} (${s.id})</span>
+            <span class="bg-rose-900 text-rose-200 px-2 py-0.5 rounded text-[10px]">MIA</span>
+          </div>
+          <p class="text-[11px] text-slate-300 mt-1">${s.unit} • Band: ${s.device}</p>
+          <div class="mt-2 text-[10px] text-cyan-400 font-mono">
+            GPS: ${s.lat.toFixed(4)}°N, ${s.lng.toFixed(4)}°E (Click to Pinpoint)
+          </div>
+        </div>
+      `).join('');
+
+      // Monitoring Grid (Tab 3)
+      document.getElementById('monitoringGrid').innerHTML = soldiers.map(s => {
+        const isHigh = s.hr > 100;
+        const isMissing = s.tactical === 'MISSING' || s.attendance === 'MISSING_MIA' || s.hr === 0;
+        const pulseColor = isMissing ? 'border-rose-600 bg-rose-950/40 glow-red' : isHigh ? 'border-amber-500/80 bg-amber-950/30 glow-amber' : 'border-slate-800 bg-slate-900/60';
+        const heartAnim = isMissing ? 'opacity-30' : isHigh ? 'animate-ping' : 'animate-pulse';
+
+        return `
+        <div class="rounded-2xl border ${pulseColor} p-5 space-y-3">
+          <div class="flex justify-between border-b border-slate-800 pb-2">
+            <div>
+              <p class="font-bold text-white text-sm">${s.name}</p>
+              <p class="text-[10px] text-cyan-400 font-mono">${s.id} • ${s.unit}</p>
+            </div>
+            <div class="flex items-center space-x-1.5">
+              <span class="text-[10px] font-bold font-mono px-2 py-0.5 rounded ${s.status==='NORMAL'?'bg-emerald-950 text-emerald-400 border border-emerald-800':'bg-rose-950 text-rose-400 border border-rose-800'}">${s.tactical}</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+            <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 relative overflow-hidden">
+              <div class="flex justify-between items-center">
+                <span class="text-rose-400 font-bold flex items-center space-x-1">
+                  <span class="${heartAnim}">💓</span>
+                  <span>Pulse Rate</span>
+                </span>
+                <span class="text-[9px] ${isHigh ? 'text-amber-400 font-bold' : isMissing ? 'text-rose-400' : 'text-emerald-400'}">${isMissing ? 'OFFLINE' : isHigh ? 'ELEVATED' : 'NORMAL'}</span>
+              </div>
+              <p class="text-2xl font-extrabold text-white mt-1">${s.hr > 0 ? s.hr : '--'} <span class="text-xs font-normal text-slate-400">BPM</span></p>
+              <div class="mt-1 flex items-center justify-between text-[9px] text-slate-400">
+                <span>Sensor: MAX30102</span>
+                <button onclick="switchTab('dashboard'); changeChartSoldier('${s.id}'); document.getElementById('chartSoldierSelect').value='${s.id}';" class="text-cyan-400 hover:underline">Plot Graph 📈</button>
+              </div>
+            </div>
+
+            <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+              <div class="flex justify-between items-center">
+                <span class="text-amber-400 font-bold">🌡️ Body Temp</span>
+                <span class="text-[9px] text-slate-400">DS18B20</span>
+              </div>
+              <p class="text-2xl font-extrabold text-white mt-1">${s.temp > 0 ? s.temp : '--'} <span class="text-xs font-normal text-slate-400">°C</span></p>
+              <p class="mt-1 text-[9px] ${s.temp > 38 ? 'text-rose-400 font-bold' : 'text-slate-400'}">${s.temp > 38 ? '⚠️ High Fever Distress' : 'Core Temp Normal'}</p>
+            </div>
+          </div>
+
+          <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-[10px] font-mono text-slate-300 flex justify-between items-center">
+            <div class="flex items-center space-x-1.5 truncate">
+              <span class="text-cyan-400">📍 Post:</span>
+              <span class="text-white font-bold truncate">${s.dutyPost || 'Sector Alpha Outpost'}</span>
+            </div>
+            <span class="text-amber-400 text-right whitespace-nowrap ml-2">🎯 ${s.roleDuty || 'Active Duty'}</span>
+          </div>
+
+          <div class="flex justify-between text-xs font-mono text-slate-400 border-t border-slate-800 pt-2">
+            <span>Water: <strong class="text-cyan-400">${s.water}%</strong></span>
+            <span>Food: <strong class="text-emerald-400">${s.food}%</strong></span>
+            <span>Ammo: <strong class="text-yellow-400">${s.ammo} Rds</strong></span>
+            <span>Bat: <strong class="text-emerald-400">${s.battery}%</strong></span>
+          </div>
+
+          <div class="grid grid-cols-3 gap-1.5 text-xs font-mono font-bold pt-1">
+            <button onclick="openDispatchModal('${s.id}', 'DOCTOR')" class="rounded-xl bg-rose-950 text-rose-300 py-1.5 border border-rose-800 hover:bg-rose-900 text-center">🚑 Send Doctor</button>
+            <button onclick="openDispatchModal('${s.id}', 'REINFORCE')" class="rounded-xl bg-amber-950 text-amber-300 py-1.5 border border-amber-800 hover:bg-amber-900 text-center">🛡️ Send Backup</button>
+            <button onclick="openDispatchModal('${s.id}', 'SUPPLIES')" class="rounded-xl bg-cyan-950 text-cyan-300 py-1.5 border border-cyan-800 hover:bg-cyan-900 text-center">📦 Supplies</button>
+          </div>
+        </div>
+        `;
+      }).join('');
+
+      // Logistics Grid
+      document.getElementById('logisticsGrid').innerHTML = soldiers.map(s => `
+        <div class="rounded-2xl border ${s.water<30||s.food<30||s.ammo<50?'border-amber-600 bg-amber-950/20 glow-amber':'border-slate-800 bg-slate-900/60'} p-5">
+          <div class="flex justify-between border-b border-slate-800 pb-2">
+            <div>
+              <p class="font-bold text-white text-sm">${s.name}</p>
+              <p class="text-[10px] text-cyan-400 font-mono">${s.id} • ${s.unit}</p>
+            </div>
+            <span class="text-[10px] font-mono text-slate-400 bg-slate-800 px-2 py-0.5 rounded">Band: ${s.device}</span>
+          </div>
+
+          <div class="mt-3 space-y-2 text-xs font-mono">
+            <div>
+              <div class="flex justify-between text-slate-300 mb-0.5">
+                <span>💧 Drinking Water:</span>
+                <span class="font-bold ${s.water<30?'text-rose-400 font-extrabold':''}">${s.water}%</span>
+              </div>
+              <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                <div class="h-full ${s.water<30?'bg-rose-500':'bg-cyan-500'}" style="width:${s.water}%"></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-slate-300 mb-0.5">
+                <span>🍞 Food Rations:</span>
+                <span class="font-bold ${s.food<30?'text-rose-400 font-extrabold':''}">${s.food}%</span>
+              </div>
+              <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                <div class="h-full ${s.food<30?'bg-rose-500':'bg-emerald-500'}" style="width:${s.food}%"></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-slate-300 mb-0.5">
+                <span>🔫 5.56mm Ammo:</span>
+                <span class="font-bold ${s.ammo<50?'text-rose-400 font-extrabold':''}">${s.ammo} Rds</span>
+              </div>
+              <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                <div class="h-full ${s.ammo<50?'bg-rose-500':'bg-amber-500'}" style="width:${Math.min(100, (s.ammo/250)*100)}%"></div>
+              </div>
+            </div>
+          </div>
+
+          <button onclick="openDispatchModal('${s.id}', 'SUPPLIES')" class="mt-4 w-full rounded-xl bg-cyan-600 hover:bg-cyan-500 py-2.5 text-xs font-bold text-white shadow-md shadow-cyan-600/30 transition flex items-center justify-center space-x-1">
+            <span>🪂 Dispatch Tactical Air Supply Drop</span>
+          </button>
+        </div>
+      `).join('');
+
+      // Active Alerts Feed
+      document.getElementById('fullAlertsFeed').innerHTML = alerts.length === 0 ? `
+        <div class="rounded-2xl border border-emerald-500/30 bg-emerald-950/20 p-8 text-center text-emerald-400">
+          <p class="text-3xl mb-1">✓</p>
+          <p class="font-bold text-base">All Operational Issues Resolved!</p>
+          <p class="text-xs text-slate-400 mt-1 font-mono">No active emergencies or unattended casualties.</p>
+        </div>
+      ` : alerts.map(a => `
+        <div class="flex flex-col sm:flex-row justify-between items-center gap-3 rounded-2xl border border-rose-500/40 bg-rose-950/20 p-4 text-xs font-mono">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="font-bold text-white text-sm">${a.soldier}</span>
+              <span class="bg-rose-900 text-rose-200 px-2 py-0.5 rounded font-bold">${a.type}</span>
+            </div>
+            <p class="text-slate-300 mt-1">${a.msg}</p>
+          </div>
+          <div class="flex space-x-2">
+            <button onclick="openDispatchModal('${a.soldierId||'SOL-003'}', 'DOCTOR')" class="bg-rose-600 hover:bg-rose-500 px-3 py-1.5 rounded-xl font-bold text-white">🚑 Dispatch Doctor</button>
+            <button onclick="openDispatchModal('${a.soldierId||'SOL-005'}', 'REINFORCE')" class="bg-amber-600 hover:bg-amber-500 px-3 py-1.5 rounded-xl font-bold text-white">🛡️ Send Backup</button>
+            <button onclick="resolveAlertDirectly('${a.id}')" class="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-xl font-bold text-cyan-300">✓ Resolve</button>
+          </div>
+        </div>
+      `).join('');
+
+      // Resolved Alerts Feed
+      document.getElementById('resolvedAlertsFeed').innerHTML = resolvedAlerts.map(r => `
+        <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-3 text-xs font-mono flex justify-between items-center text-slate-400">
+          <div>
+            <span class="text-emerald-400 font-bold">✓ [RESOLVED] ${r.type}</span> — ${r.soldier}
+            <p class="text-[11px] text-slate-300 mt-0.5">${r.action}</p>
+          </div>
+          <span class="text-[10px] text-slate-500">${r.time}</span>
+        </div>
+      `).join('');
+
+      // Report Table
+      document.getElementById('reportTableBody').innerHTML = soldiers.map(s => `
+        <tr class="hover:bg-slate-900/60">
+          <td class="p-2.5 font-bold text-cyan-400">${s.id}</td>
+          <td class="p-2.5 font-bold text-white">${s.name}</td>
+          <td class="p-2.5 text-slate-300">${s.unit}</td>
+          <td class="p-2.5 font-semibold text-emerald-400">📍 ${s.dutyPost || 'Sector Alpha'}</td>
+          <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${s.attendance==='PRESENT_PATROL'?'bg-emerald-950 text-emerald-300 border border-emerald-800':s.attendance==='MISSING_MIA'?'bg-rose-950 text-rose-300 border border-rose-800':'bg-slate-900 text-slate-300 border border-slate-700'}">${s.attendance.replace(/_/g, ' ')}</span></td>
+          <td class="p-2.5 font-bold ${s.hr>100?'text-rose-400':s.hr>0?'text-emerald-400':'text-slate-500'}">💓 ${s.hr > 0 ? s.hr + ' BPM' : '--'}</td>
+          <td class="p-2.5 text-slate-200">🌡️ ${s.temp > 0 ? s.temp + ' °C' : '--'}</td>
+          <td class="p-2.5 text-cyan-300">💧 ${s.water}%</td>
+          <td class="p-2.5 text-amber-300">🎯 ${s.ammo} Rds</td>
+          <td class="p-2.5 font-bold ${s.tactical==='MISSING'?'text-rose-400':s.tactical==='IN_DANGER'?'text-amber-400':'text-emerald-400'}">${s.tactical}</td>
+        </tr>
+      `).join('');
+
+      document.getElementById('dashAlertCount').innerHTML = `${alerts.length} <span class="text-xs text-slate-400">Pending</span>`;
+      document.getElementById('navAlertBadge').innerText = alerts.length;
+    }
+
+    function updateSoldierAttendance(soldierId, newStatus) {
+      const sol = soldiers.find(s => s.id === soldierId);
+      if(sol) {
+        sol.attendance = newStatus;
+        if(newStatus === 'PRESENT_PATROL') {
+          sol.tactical = 'ON_PATROL';
+          sol.status = 'NORMAL';
+        } else if(newStatus === 'MISSING_MIA') {
+          sol.tactical = 'MISSING';
+          sol.status = 'CRITICAL';
+        } else if(newStatus === 'SICK_BAY') {
+          sol.tactical = 'HOSPITALIZED';
+          sol.status = 'WARNING';
+        }
+        renderUI();
+      }
+    }
+
+    let currentMiaSoldierId = 'SOL-005';
+
+    function pinpointMissingSoldier(soldierId) {
+      currentMiaSoldierId = soldierId;
+      const sol = soldiers.find(s => s.id === soldierId) || soldiers[4];
+      document.getElementById('miaTargetTitle').innerText = `GPS Pinpoint: ${sol.name} (${sol.id})`;
+      document.getElementById('miaCoords').innerText = `${sol.lat.toFixed(4)}°N, ${sol.lng.toFixed(4)}°E`;
+      document.getElementById('miaTerrain').innerText = `Sector Alpha Ridge Checkpoint (Hostile Ravine)`;
+      document.getElementById('miaDistance').innerText = `~${(Math.sqrt(Math.pow(sol.lat-17.44,2)+Math.pow(sol.lng-78.3489,2))*111).toFixed(2)} km from HQ`;
+      
+      const isStillMissing = sol.attendance === 'MISSING_MIA' || sol.tactical === 'MISSING';
+      const sigBadge = document.getElementById('miaSignalBadge');
+      if(sigBadge) {
+        sigBadge.className = isStillMissing 
+          ? 'text-[10px] font-mono text-rose-400 bg-rose-950 px-2 py-0.5 rounded border border-rose-800 animate-pulse'
+          : 'text-[10px] font-mono text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800';
+        sigBadge.innerText = isStillMissing ? 'RADIO SIGNAL OFFLINE' : 'SIGNAL RESTORED / SECURED';
+      }
+
+      if(miaMap) {
+        miaMap.setView([sol.lat, sol.lng], 15);
+        setTimeout(() => miaMap.invalidateSize(), 200);
+      }
+    }
+
+    // 🚁 COMMANDER ASSIGNS SPECIALIZED TEAM TO SEARCH & FIND MISSING SOLDIER
+    function executeSpecializedRescue() {
+      const sol = soldiers.find(s => s.id === currentMiaSoldierId) || soldiers.find(s => s.tactical === 'MISSING' || s.attendance === 'MISSING_MIA') || soldiers[4];
+      
+      const teamRadio = document.querySelector('input[name="specializedTeam"]:checked');
+      const teamValue = teamRadio ? teamRadio.value : 'PARA_SF_AIRBORNE';
+      
+      const teamNames = {
+        'PARA_SF_AIRBORNE': '10 PARA SF Extraction Squad (Chopper Fast-Rope)',
+        'K9_TRACKER_UNIT': 'K9 Canine Scent Search Unit (Sniffer Dogs)',
+        'DRONE_FLIR_RECON': 'Autonomous Thermal FLIR Drone Recon Squad',
+        'MOUNTAIN_WARFARE': 'Mountain Cliff Rescue Unit (Alpine Specialists)'
+      };
+      const assignedTeamName = teamNames[teamValue] || 'Specialized Search & Rescue Squad';
+
+      const progressBox = document.getElementById('rescueProgressConsole');
+      const progressStage = document.getElementById('rescueProgressStage');
+      const progressPercent = document.getElementById('rescueProgressPercent');
+      const progressBar = document.getElementById('rescueProgressBar');
+      const progressDetails = document.getElementById('rescueProgressDetails');
+      const launchBtn = document.getElementById('launchRescueBtn');
+
+      progressBox.classList.remove('hidden');
+      launchBtn.disabled = true;
+      launchBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+      playWatchNotificationSound();
+
+      // STEP 1: Deployment (0s)
+      progressStage.innerText = `📡 STEP 1: DISPATCHING ${assignedTeamName.toUpperCase()}...`;
+      progressPercent.innerText = '25%';
+      progressBar.style.width = '25%';
+      progressDetails.innerText = `Deploying ${assignedTeamName} to last reported GPS coordinates (${sol.lat.toFixed(4)}°N, ${sol.lng.toFixed(4)}°E)...`;
+
+      // STEP 2: Thermal Radar & Scent Tracking (1.6s)
+      setTimeout(() => {
+        progressStage.innerText = '🔍 STEP 2: PERIMETER RADAR & SENSOR SWEEP ACTIVE...';
+        progressPercent.innerText = '65%';
+        progressBar.style.width = '65%';
+        progressDetails.innerText = `Thermal sensors & ground reconnaissance scanning 800m grid sector... Faint body heat signature detected!`;
+        playWatchNotificationSound();
+      }, 1600);
+
+      // STEP 3: SOLDIER FOUND, SECURED & RESCUED! (3.2s)
+      setTimeout(() => {
+        progressStage.innerText = '🎯 STEP 3: MISSING SOLDIER LOCATED & FOUND!';
+        progressPercent.innerText = '100%';
+        progressBar.style.width = '100%';
+        progressDetails.innerText = `SUCCESS! Soldier ${sol.name} located alive and secured by ${assignedTeamName}! Vitals re-established.`;
+
+        // 🌟 RESTORE SOLDIER HEALTH & STATUS
+        sol.attendance = 'PRESENT_PATROL';
+        sol.tactical = 'FOUND_AND_SECURED';
+        sol.status = 'NORMAL';
+        sol.hr = 78;
+        sol.temp = 36.8;
+        sol.battery = 92;
+        sol.water = 85;
+        sol.food = 80;
+        sol.ammo = 160;
+
+        // Auto-clear missing alert from pending
+        alerts = alerts.filter(a => a.soldierId !== sol.id && a.type !== 'SOLDIER_MISSING');
+
+        // Record in Resolved Archive
+        resolvedAlerts.unshift({
+          id: 'RES-SEARCH-' + Date.now(),
+          soldier: `${sol.id} (${sol.name})`,
+          type: 'SPECIALIZED_RESCUE_SUCCESS',
+          action: `🎯 SOLDIER FOUND: Assigned ${assignedTeamName} located and extracted missing soldier from GPS ${sol.lat}°N, ${sol.lng}°E. All vitals restored to normal.`,
+          time: 'Just now'
+        });
+
+        // Transmit live confirmation to Soldier's Watch Band
+        sendNotificationToWatch(sol.id, `🚁 RESCUE SUCCESS: ${assignedTeamName} has reached your coordinates and secured perimeter! Transporting to Base HQ.`);
+
+        playAudioSiren();
+        renderUI();
+
+        const sigBadge = document.getElementById('miaSignalBadge');
+        if(sigBadge) {
+          sigBadge.className = 'text-[10px] font-mono text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800';
+          sigBadge.innerText = 'SIGNAL RESTORED / SECURED';
+        }
+
+        setTimeout(() => {
+          launchBtn.disabled = false;
+          launchBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+          alert(`🎯 OPERATION COMPLETE:\n\nSoldier ${sol.name} (${sol.id}) has been successfully FOUND & RESCUED by ${assignedTeamName}!\n\n✓ Live Pulse restored to 78 BPM\n✓ GPS & Band Signal Online\n✓ Transferred to Safe Zone`);
+        }, 800);
+      }, 3200);
+    }
+
+    // Quick Simulation: Report Any Soldier Missing
+    function simulateReportMissingPrompt() {
+      const activeSols = soldiers.filter(s => s.tactical !== 'MISSING' && s.attendance !== 'MISSING_MIA');
+      if(activeSols.length === 0) {
+        alert('All soldiers are currently already marked missing.');
+        return;
+      }
+      const target = activeSols[Math.floor(Math.random() * activeSols.length)];
+      target.attendance = 'MISSING_MIA';
+      target.tactical = 'MISSING';
+      target.status = 'CRITICAL';
+      target.hr = 0;
+      target.temp = 0;
+
+      alerts.unshift({
+        id: 'ALT-' + Math.floor(Math.random()*8000+1000),
+        soldier: `${target.id} (${target.name})`,
+        soldierId: target.id,
+        type: 'SOLDIER_MISSING',
+        severity: 'CRITICAL',
+        msg: `🚨 SOLDIER MISSING: ${target.name} signal lost in hostile sector! Assign specialized search squad immediately!`,
+        time: 'Just now'
+      });
+
+      playAudioSiren();
+      pinpointMissingSoldier(target.id);
+      renderUI();
+      alert(`⚠️ SIMULATION: Soldier ${target.name} (${target.id}) marked MISSING IN ACTION! Assign a specialized team to search and find them.`);
+    }
+
+    // 📡 SEND TRANSMISSION TO SOLDIER'S SMART WATCH BAND
+    function sendNotificationToWatch(soldierId, message) {
+      const sol = soldiers.find(s => s.id === soldierId);
+      if(!sol) return;
+
+      const watchMsgText = document.getElementById('watchIncomingMsgText');
+      const watchMsgBox = document.getElementById('watchIncomingMsgBox');
+      const watchMsgTime = document.getElementById('watchIncomingMsgTime');
+
+      if(watchMsgText && watchMsgBox) {
+        watchMsgText.innerText = message;
+        watchMsgTime.innerText = `Received: ${new Date().toLocaleTimeString()} (From: Commander Capt. Vikram)`;
+        watchMsgBox.classList.add('glow-green');
+        playWatchNotificationSound();
+      }
+    }
+
+    // ⌚ SMART BAND BUTTON TRIGGERS (SOLDIER -> COMMANDER)
+    function triggerBandAction(type) {
+      const sol = soldiers.find(s => s.id === currentTargetSoldierId) || soldiers[0];
+      const feedback = document.getElementById('bandFeedbackMsg');
+      feedback.classList.remove('hidden');
+
+      if(type === 'SOS') {
+        sol.hr = 145;
+        sol.status = 'CRITICAL';
+        sol.tactical = 'SOS_ACTIVE';
+        playAudioSiren();
+        alerts.unshift({
+          id: 'ALT-' + Math.floor(Math.random()*8000+1000),
+          soldier: `${sol.id} (${sol.name})`,
+          soldierId: sol.id,
+          type: 'SOS_PANIC_BUTTON',
+          severity: 'CRITICAL',
+          msg: `🚨 EMERGENCY: Soldier ${sol.name} clicked physical SOS Panic Button on Smart Band! Immediate help needed!`,
+          time: 'Just now'
+        });
+        showBanner('🚨 SOS PANIC TRIGGERED', `Soldier ${sol.name} pressed Watch SOS Button!`, sol.name, sol.id, 'DOCTOR');
+        feedback.innerText = '🚨 SOS BEACON TRANSMITTED TO COMMANDER HUD!';
+      } else if(type === 'HEALTH_DISTRESS') {
+        sol.hr = 152;
+        sol.temp = 39.4;
+        sol.status = 'CRITICAL';
+        sol.tactical = 'MEDICAL_DISTRESS';
+        playAudioSiren();
+        alerts.unshift({
+          id: 'ALT-' + Math.floor(Math.random()*8000+1000),
+          soldier: `${sol.id} (${sol.name})`,
+          soldierId: sol.id,
+          type: 'HEALTH_DISTRESS',
+          severity: 'CRITICAL',
+          msg: `🚑 HEALTH DISTRESS: Soldier ${sol.name} vitals critical (152 BPM / 39.4°C). Dispatch Field Doctor!`,
+          time: 'Just now'
+        });
+        showBanner('🚑 HEALTH DISTRESS', `Soldier ${sol.name} is severely unwell! Doctor required.`, sol.name, sol.id, 'DOCTOR');
+        feedback.innerText = '🚑 HEALTH DISTRESS NOTIFICATION SENT TO COMMANDER!';
+      } else if(type === 'COMBAT_DANGER') {
+        sol.tactical = 'IN_DANGER';
+        sol.status = 'CRITICAL';
+        playAudioSiren();
+        alerts.unshift({
+          id: 'ALT-' + Math.floor(Math.random()*8000+1000),
+          soldier: `${sol.id} (${sol.name})`,
+          soldierId: sol.id,
+          type: 'COMBAT_DANGER',
+          severity: 'CRITICAL',
+          msg: `⚔️ HOSTILE CONTACT: Soldier ${sol.name} under fire! Requesting Backup Reinforcements immediately!`,
+          time: 'Just now'
+        });
+        showBanner('⚔️ COMBAT DANGER', `Soldier ${sol.name} in danger! Assign backup soldiers now.`, sol.name, sol.id, 'REINFORCE');
+        feedback.innerText = '⚔️ DANGER ALERT SENT: Commander notified to send backup!';
+      } else if(type.startsWith('NEED_')) {
+        const item = type === 'NEED_WATER' ? 'Fresh Drinking Water (5L)' : type === 'NEED_FOOD' ? 'Tactical Food Rations (3 Days)' : '5.56mm Ammo & Grenades';
+        alerts.unshift({
+          id: 'ALT-' + Math.floor(Math.random()*8000+1000),
+          soldier: `${sol.id} (${sol.name})`,
+          soldierId: sol.id,
+          type: 'SUPPLY_REQUEST',
+          severity: 'HIGH',
+          msg: `📦 SUPPLY NEEDED: Soldier ${sol.name} requested [${item}]`,
+          time: 'Just now'
+        });
+        showBanner('📦 SUPPLY REQUEST', `${sol.name} requested ${item}`, sol.name, sol.id, 'SUPPLIES');
+        feedback.innerText = `📦 REQUEST SENT: [${item}] order received by Logistics!`;
+      }
+
+      renderUI();
+      setTimeout(() => feedback.classList.add('hidden'), 4000);
+    }
+
+    function changeBandSoldier(soldierId) {
+      currentTargetSoldierId = soldierId;
+      const sol = soldiers.find(s => s.id === soldierId);
+      if(sol) {
+        document.getElementById('bandNameLabel').innerText = sol.name.split(' ')[1] || sol.name;
+        document.getElementById('bandDeviceLabel').innerText = sol.device;
+        document.getElementById('bandHrLabel').innerText = (sol.hr || 75) + ' BPM';
+        document.getElementById('bandTempLabel').innerText = (sol.temp || 36.7) + ' °C';
+        document.getElementById('bandGpsLabel').innerText = `GPS: ${sol.lat.toFixed(3)}°N, ${sol.lng.toFixed(3)}°E`;
+        const postEl = document.getElementById('bandDutyPostLabel');
+        if(postEl) postEl.innerText = `📍 Post: ${sol.dutyPost || 'Field Patrol Sector'}`;
+      }
+    }
+
+    function openDispatchModal(soldierId, defaultTab) {
+      currentTargetSoldierId = soldierId;
+      const sol = soldiers.find(s => s.id === soldierId) || soldiers[0];
+      document.getElementById('dspModalTarget').innerText = `Target Soldier: ${sol.id} — ${sol.name} (${sol.unit})`;
+      setDispatchTab(defaultTab || 'DOCTOR');
+      toggleModal('dispatchModal', true);
+    }
+
+    function setDispatchTab(tab) {
+      currentDispatchTab = tab;
+      document.querySelectorAll('.dspTabBtn').forEach(b => b.className = 'dspTabBtn rounded-xl p-2.5 font-bold bg-slate-900 border border-slate-800 text-slate-400');
+      document.querySelectorAll('.dspContent').forEach(c => c.classList.add('hidden'));
+
+      document.getElementById(`dspTab-${tab}`).className = `dspTabBtn rounded-xl p-2.5 font-bold ${tab==='DOCTOR'?'bg-rose-950 border border-rose-500 text-rose-300':tab==='REINFORCE'?'bg-amber-950 border border-amber-500 text-amber-300':'bg-cyan-950 border border-cyan-500 text-cyan-300'}`;
+      document.getElementById(`dspContent-${tab}`).classList.remove('hidden');
+    }
+
+    // 📡 COMMANDER APPROVES / DISPATCHES -> SENDS LIVE CONFIRMATION NOTIFICATION TO SOLDIER'S WATCH BAND!
+    function confirmDispatchAction() {
+      const sol = soldiers.find(s => s.id === currentTargetSoldierId) || soldiers[0];
+      const successBox = document.getElementById('dspSuccessMsg');
+      successBox.classList.remove('hidden');
+
+      let actionDesc = '';
+      let watchNotificationMessage = '';
+
+      if(currentDispatchTab === 'DOCTOR') {
+        const doc = document.getElementById('doctorSelect').value;
+        actionDesc = `🚑 Doctor Dispatched (${doc})`;
+        successBox.innerText = `🚑 SUCCESS: ${doc} Dispatched to ${sol.name}! Notification sent to watch.`;
+        watchNotificationMessage = `🚑 COMMAND APPROVED: ${doc} is EN ROUTE to your GPS coordinates! ETA: ~4 mins. Rest and stay in position.`;
+        sol.tactical = 'DOCTOR_EN_ROUTE';
+        sol.status = 'NORMAL';
+        sol.hr = 78;
+        sol.temp = 36.8;
+      } else if(currentDispatchTab === 'REINFORCE') {
+        const squad = document.getElementById('backupSelect').value;
+        actionDesc = `🛡️ Reinforcements Dispatched (${squad})`;
+        successBox.innerText = `🛡️ SUCCESS: Reinforcements (${squad}) Dispatched to ${sol.name}! Notification sent to watch.`;
+        watchNotificationMessage = `🛡️ COMMAND APPROVED: ${squad} deployed to reinforce your location! ETA: ~6 mins. Hold perimeter!`;
+        sol.tactical = 'SECURED_BY_BACKUP';
+        sol.status = 'NORMAL';
+      } else {
+        actionDesc = `🪂 Parachute Air Supply Drop Dispatched (Water, Food, Ammo)`;
+        successBox.innerText = `🪂 SUCCESS: Tactical Supply Drop dispatched to ${sol.name}! Notification sent to watch.`;
+        watchNotificationMessage = `🪂 COMMAND APPROVED: Tactical Air Supply Drop inbound to your grid with Water, MRE Rations & Ammo! ETA: 3 mins.`;
+        sol.water = Math.min(100, sol.water + 50);
+        sol.food = Math.min(100, sol.food + 40);
+        sol.ammo = sol.ammo + 120;
+        sol.tactical = 'SUPPLIES_RECEIVED';
+      }
+
+      // TRANSMIT LIVE NOTIFICATION TO SOLDIER'S WATCH BAND
+      sendNotificationToWatch(sol.id, watchNotificationMessage);
+
+      // AUTO-CLEAR ACTIVE ALERT (DISAPPEAR FROM PENDING)
+      alerts = alerts.filter(a => a.soldierId !== sol.id);
+
+      // RECORD IN RESOLVED ARCHIVE
+      resolvedAlerts.unshift({
+        id: 'RES-' + Date.now(),
+        soldier: `${sol.id} (${sol.name})`,
+        type: currentDispatchTab,
+        action: actionDesc,
+        time: 'Just now'
+      });
+
+      renderUI();
+      dismissBanner();
+
+      setTimeout(() => {
+        successBox.classList.add('hidden');
+        toggleModal('dispatchModal', false);
+      }, 2000);
+    }
+
+    function resolveAlertDirectly(alertId) {
+      const alt = alerts.find(a => a.id === alertId);
+      if(alt) {
+        alerts = alerts.filter(a => a.id !== alertId);
+        resolvedAlerts.unshift({
+          id: 'RES-' + Date.now(),
+          soldier: alt.soldier,
+          type: alt.type,
+          action: 'Manually verified and cleared by Commanding Officer',
+          time: 'Just now'
+        });
+        sendNotificationToWatch(alt.soldierId || 'SOL-001', '✓ COMMAND NOTICE: Your status has been reviewed and verified normal by Base Command.');
+        renderUI();
+      }
+    }
+
+    function showBanner(title, msg, soldierName, soldierId, actionTab) {
+      const banner = document.getElementById('alertBanner');
+      banner.classList.remove('hidden');
+      banner.className = 'fixed bottom-5 right-5 z-50 max-w-md rounded-2xl border p-4 shadow-2xl backdrop-blur-md transition-all border-rose-600 bg-rose-950/95 text-white glow-red';
+      document.getElementById('bannerType').innerText = title;
+      document.getElementById('bannerMessage').innerText = msg;
+      document.getElementById('bannerSoldier').innerText = `Soldier: ${soldierName}`;
+      document.getElementById('bannerActionBtn').onclick = () => {
+        dismissBanner();
+        openDispatchModal(soldierId, actionTab);
+      };
+    }
+
+    function dismissBanner() {
+      document.getElementById('alertBanner').classList.add('hidden');
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('bg-cyan-950/40', 'border-cyan-500/30', 'text-cyan-300');
+        btn.classList.add('text-slate-400');
+      });
+      const activeBtn = document.getElementById(`nav-${tabId}`);
+      if(activeBtn) {
+        activeBtn.classList.add('bg-cyan-950/40', 'border-cyan-500/30', 'text-cyan-300');
+        activeBtn.classList.remove('text-slate-400');
+      }
+
+      if(tabId === 'map' && fullMap) setTimeout(() => fullMap.invalidateSize(), 200);
+      if(tabId === 'dashboard' && miniMap) setTimeout(() => miniMap.invalidateSize(), 200);
+      if(tabId === 'missing' && miaMap) setTimeout(() => miaMap.invalidateSize(), 200);
+    }
+
+    let loggedInUser = {
+      id: 'OFF-007',
+      name: 'Capt. Vikram Rathore',
+      rank: 'Captain',
+      role: 'COMMANDER',
+      unit: '10 Para SF'
+    };
+
+    function openAuthModal() {
+      toggleModal('authPortalModal', true);
+    }
+
+    function setAuthTab(tab) {
+      document.getElementById('authTab-LOGIN').classList.toggle('hidden', tab !== 'LOGIN');
+      document.getElementById('authTab-REGISTER').classList.toggle('hidden', tab !== 'REGISTER');
+      
+      document.getElementById('authTabBtn-LOGIN').className = tab === 'LOGIN' 
+        ? 'rounded-lg py-2 font-bold bg-cyan-950 border border-cyan-500 text-cyan-300' 
+        : 'rounded-lg py-2 font-bold bg-slate-900 text-slate-400 hover:text-white';
+      
+      document.getElementById('authTabBtn-REGISTER').className = tab === 'REGISTER' 
+        ? 'rounded-lg py-2 font-bold bg-cyan-950 border border-cyan-500 text-cyan-300' 
+        : 'rounded-lg py-2 font-bold bg-slate-900 text-slate-400 hover:text-white';
+    }
+
+    function fillLoginDemo(role) {
+      if(role === 'COMMANDER') {
+        document.getElementById('loginIdInput').value = 'OFF-007';
+        document.getElementById('loginPinInput').value = '1234';
+      } else if(role === 'SOLDIER') {
+        document.getElementById('loginIdInput').value = 'SOL-001';
+        document.getElementById('loginPinInput').value = '1234';
+      } else {
+        document.getElementById('loginIdInput').value = 'MED-003';
+        document.getElementById('loginPinInput').value = '1234';
+      }
+    }
+
+    function handleLoginSubmit() {
+      const id = document.getElementById('loginIdInput').value.trim();
+      const statusBox = document.getElementById('authStatusMsg');
+      statusBox.classList.remove('hidden');
+
+      if(!id) {
+        statusBox.className = 'rounded-xl border border-rose-500 bg-rose-950 p-2 text-rose-300 text-xs font-mono font-bold';
+        statusBox.innerText = '❌ Please enter valid Service Number or Officer ID.';
+        return;
+      }
+
+      if(id === 'OFF-007' || id.startsWith('OFF') || id.toLowerCase().includes('command')) {
+        loggedInUser = { id: id, name: 'Capt. Vikram Rathore', rank: 'Captain', role: 'COMMANDER', unit: '10 Para SF' };
+      } else if(id === 'MED-003' || id.toLowerCase().includes('doc')) {
+        loggedInUser = { id: id, name: 'Dr. Major Ananya Roy', rank: 'Major', role: 'DOCTOR', unit: 'Medical Trauma Unit' };
+      } else {
+        const existingSoldier = soldiers.find(s => s.id === id) || { name: 'Havildar Rajesh Kumar', rank: 'Havildar', unit: '10 Para SF (Alpha)' };
+        loggedInUser = { id: id, name: existingSoldier.name, rank: existingSoldier.rank || 'Soldier', role: 'SOLDIER', unit: existingSoldier.unit || 'Alpha Unit' };
+        currentTargetSoldierId = id;
+      }
+
+      updateUserNavbar();
+      statusBox.className = 'rounded-xl border border-emerald-500 bg-emerald-950 p-2 text-emerald-300 text-xs font-mono font-bold';
+      statusBox.innerText = `✓ Authenticated as ${loggedInUser.name} (${loggedInUser.role})!`;
+      playWatchNotificationSound();
+
+      setTimeout(() => {
+        statusBox.classList.add('hidden');
+        toggleModal('authPortalModal', false);
+        if(loggedInUser.role === 'SOLDIER') {
+          toggleModal('smartBandModal', true);
+        }
+      }, 800);
+    }
+
+    function handleRegisterSubmit() {
+      const name = document.getElementById('regNameInput').value.trim();
+      const rank = document.getElementById('regRankSelect').value;
+      const role = document.getElementById('regRoleSelect').value;
+      const id = document.getElementById('regIdInput').value.trim() || `SOL-00${soldiers.length + 1}`;
+      const unit = document.getElementById('regUnitSelect').value;
+      const band = document.getElementById('regBandInput').value.trim() || `DEV-00${soldiers.length + 1}`;
+
+      const statusBox = document.getElementById('authStatusMsg');
+      statusBox.classList.remove('hidden');
+
+      if(!name) {
+        statusBox.className = 'rounded-xl border border-rose-500 bg-rose-950 p-2 text-rose-300 text-xs font-mono font-bold';
+        statusBox.innerText = '❌ Please enter Soldier/Officer Full Name.';
+        return;
+      }
+
+      const dutyPost = document.getElementById('regDutyPostInput')?.value.trim() || 'North Ridge Bunker 5 (Border Sector)';
+
+      // Add new soldier to active roster
+      const newSoldier = {
+        id: id,
+        name: `${rank} ${name}`,
+        rank: rank,
+        unit: unit,
+        device: band,
+        dutyPost: dutyPost,
+        roleDuty: 'Active Sector Security & Recon Patrol',
+        attendance: 'PRESENT_PATROL',
+        hr: 76,
+        temp: 36.6,
+        battery: 95,
+        water: 90,
+        food: 85,
+        ammo: 180,
+        lat: 17.4410 + (Math.random()*0.01 - 0.005),
+        lng: 78.3480 + (Math.random()*0.01 - 0.005),
+        status: 'NORMAL',
+        tactical: 'ON_PATROL',
+        lastCheckin: 'Just now (Enlisted)'
+      };
+
+      soldiers.push(newSoldier);
+      soldierHistory[id] = [74, 75, 76, 75, 76, 77, 76, 75, 76, 76, 76];
+      soldierChartColors[id] = { border: '#38BDF8', bg: 'rgba(56, 189, 248, 0.15)', name: `${name} (${id})` };
+
+      // Add to select options
+      const bandSel = document.getElementById('bandSoldierSelect');
+      if(bandSel) {
+        const opt = document.createElement('option');
+        opt.value = id;
+        opt.innerText = `${id} — ${newSoldier.name} (${unit})`;
+        bandSel.appendChild(opt);
+      }
+
+      const chartSel = document.getElementById('chartSoldierSelect');
+      if(chartSel) {
+        const opt = document.createElement('option');
+        opt.value = id;
+        opt.innerText = `${id} — ${newSoldier.name}`;
+        chartSel.appendChild(opt);
+      }
+
+      loggedInUser = { id: id, name: newSoldier.name, rank: rank, role: role, unit: unit };
+      updateUserNavbar();
+
+      statusBox.className = 'rounded-xl border border-emerald-500 bg-emerald-950 p-2 text-emerald-300 text-xs font-mono font-bold';
+      statusBox.innerText = `✓ ENLISTMENT SUCCESSFUL: ${newSoldier.name} registered and activated on band ${band}!`;
+      playAudioSiren();
+      renderUI();
+
+      setTimeout(() => {
+        statusBox.classList.add('hidden');
+        toggleModal('authPortalModal', false);
+        alert(`🎖️ NEW PERSONNEL ENLISTED:\n\nName: ${newSoldier.name}\nService ID: ${id}\nUnit: ${unit}\nSmart Band: ${band}\n\n✓ Active IoT Live Telemetry Stream Initialized!`);
+      }, 1000);
+    }
+
+    function updateUserNavbar() {
+      const nameEl = document.getElementById('navUserDisplayName');
+      const roleEl = document.getElementById('navUserRoleBadge');
+      if(nameEl) nameEl.innerText = loggedInUser.name;
+      if(roleEl) roleEl.innerText = `${loggedInUser.role === 'COMMANDER' ? 'Commanding Officer' : loggedInUser.role === 'DOCTOR' ? 'Medical Officer' : 'Field Soldier'} • ${loggedInUser.id}`;
+    }
+
+    function toggleModal(modalId, show) {
+      document.getElementById(modalId).classList.toggle('hidden', !show);
+    }
+
+    function toggleThemeMode() {
+      const htmlEl = document.documentElement;
+      const isDark = htmlEl.classList.toggle('dark');
+      if (isDark) {
+        htmlEl.classList.remove('light');
+        document.getElementById('themeBtnIcon').innerText = '☀️';
+        document.getElementById('themeBtnText').innerText = 'Light Mode';
+      } else {
+        htmlEl.classList.add('light');
+        document.getElementById('themeBtnIcon').innerText = '🌙';
+        document.getElementById('themeBtnText').innerText = 'Dark HUD';
+      }
+    }
+
+    window.onload = () => {
+      document.getElementById('reportDate').innerText = new Date().toLocaleString();
+      initMaps();
+      initChart();
+      renderUI();
+
+      // Real-Time Telemetry Simulation for ALL Soldiers (Every 3 Seconds)
+      setInterval(() => {
+        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+        // Drift telemetry for each soldier
+        soldiers.forEach(s => {
+          if (s.tactical === 'MISSING' || s.attendance === 'MISSING_MIA') {
+            s.hr = 0;
+            s.temp = 0;
+          } else if (s.id === 'SOL-003' && s.tactical === 'IN_DANGER') {
+            // Elevated heart rate for soldier in distress
+            s.hr = Math.min(155, Math.max(105, s.hr + (Math.floor(Math.random() * 5) - 2)));
+            s.temp = Number((38.2 + Math.random() * 0.4).toFixed(1));
+          } else {
+            // Normal healthy range drift
+            const baseMin = s.id === 'SOL-002' ? 78 : s.id === 'SOL-004' ? 68 : 72;
+            const baseMax = s.id === 'SOL-002' ? 90 : s.id === 'SOL-004' ? 78 : 84;
+            s.hr = Math.min(baseMax, Math.max(baseMin, s.hr + (Math.floor(Math.random() * 5) - 2)));
+            s.temp = Number((36.5 + Math.random() * 0.4).toFixed(1));
+          }
+
+          // Push to history
+          if (soldierHistory[s.id]) {
+            soldierHistory[s.id].shift();
+            soldierHistory[s.id].push(s.hr);
+          }
+        });
+
+        // Update Chart Labels & Datasets
+        if (chart) {
+          chart.data.labels.shift();
+          chart.data.labels.push(timeStr);
+          chart.data.datasets = getChartDatasets(selectedChartSoldier);
+          chart.update();
+        }
+
+        // Refresh UI & All Soldiers Pulse Display
+        renderUI();
+
+        // Update Smart Watch Display if current soldier is selected
+        const currentBandSol = soldiers.find(s => s.id === currentTargetSoldierId);
+        if (currentBandSol) {
+          const hrLbl = document.getElementById('bandHrLabel');
+          const tmpLbl = document.getElementById('bandTempLabel');
+          if (hrLbl) hrLbl.innerText = (currentBandSol.hr || 75) + ' BPM';
+          if (tmpLbl) tmpLbl.innerText = (currentBandSol.temp || 36.7) + ' °C';
+        }
+      }, 3000);
+    };
+  </script>
+</body>
+</html>

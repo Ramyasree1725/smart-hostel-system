@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #080C14;
+    color: #F1F5F9;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0B0F19;
+}
+::-webkit-scrollbar-thumb {
+  background: #1E293B;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* Tactical Map Styling */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  background: #0b0f19 !important;
+  border-radius: 0.75rem;
+}
+
+/* Custom Pulse Glow */
+.glow-cyan {
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.35);
+}
+
+.glow-red {
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.45);
+}
+
+.glow-amber {
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.35);
+}
+
+.glow-green {
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.35);
+}
+
+/* Grid Background */
+.bg-tactical-grid {
+  background-size: 30px 30px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+}
