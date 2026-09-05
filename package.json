@@ -1,0 +1,33 @@
+{
+  "name": "smart-soldier-monitoring-system",
+  "version": "1.0.0",
+  "description": "IoT-Based Smart Soldier Monitoring and Safety System with Real-Time Biometrics, Tactical GPS, and Alerts",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "server": "cd backend && npm start",
+    "client": "cd frontend && npm run dev",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "test": "node tests/runner.js",
+    "test:coverage": "node tests/runner.js --coverage",
+    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "build": "cd frontend && npm run build"
+  },
+  "keywords": [
+    "iot",
+    "soldier-monitoring",
+    "esp32",
+    "react",
+    "nodejs",
+    "mongodb",
+    "socketio",
+    "telemetry",
+    "gps-tracking"
+  ],
+  "author": "Tactical Soldier Safety Defense Systems",
+  "license": "UNLICENSED",
+  "private": true,
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
